@@ -34,6 +34,7 @@ struct AppTitlebar<TitleContent: View>: View {
                     KeyboardDebugWindowToggleButton()
                 #endif
                 AppUpdateButton()
+                SystemAccessibilityKeyboardButton()
                 AccessibilityStatusButton()
             }
 
