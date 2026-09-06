@@ -2,6 +2,8 @@
 
 Aiboard is a floating accessibility keyboard for macOS 27 and later. It uses layouts from macOS Panel Editor and types into other apps without taking focus. Word suggestions come from macOS, with optional on-device suggestions from Apple Intelligence.
 
+![Aiboard accessibility keyboard with an English layout](docs/images/aiboard-keyboard.webp)
+
 ## Getting started
 
 ### Requirements
