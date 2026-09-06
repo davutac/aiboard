@@ -27,7 +27,7 @@ Each release includes its DMG and an `appcast.xml` whose enclosure points to tha
 A Tastko-specific Ed25519 key is stored using Sparkle's `generate_keys` tool:
 
 - Keychain account: `com.davutcaliskan.Tastko`.
-- Public key: embedded through the `SPARKLE_PUBLIC_ED_KEY` build setting and stored as the GitHub Actions repository variable of the same name.
+- Public key: embedded through the `SPARKLE_PUBLIC_ED_KEY` build setting and stored as the GitHub Actions repository secret of the same name.
 - Private key: stored in the macOS login Keychain and the repository's `SPARKLE_PRIVATE_ED_KEY` Actions secret. It is never embedded in the app or committed.
 
 Keep a secure backup of the private key. Existing installations trust this key; don't regenerate it for each release.
@@ -48,8 +48,8 @@ key_directory="$(mktemp -d)"
 trap 'rm -rf "$key_directory"' EXIT
 "$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -x "$key_directory/private.key"
 gh secret set SPARKLE_PRIVATE_ED_KEY --repo davutac/tastko < "$key_directory/private.key"
-gh variable set SPARKLE_PUBLIC_ED_KEY --repo davutac/tastko \
-  --body "$("$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -p)"
+"$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -p | \
+  gh secret set SPARKLE_PUBLIC_ED_KEY --repo davutac/tastko
 ```
 
 On another Mac, import a secure key backup with `generate_keys --account com.davutcaliskan.Tastko -f /path/to/private.key` first. Debug builds need only the committed public key to check for updates.
@@ -68,13 +68,17 @@ Configure these GitHub Actions **repository secrets**:
 
 | Secret | Value |
 | --- | --- |
+| `APPLE_TEAM_ID` | Apple Developer team ID |
+| `APPLE_API_KEY_ID` | Notarization API key ID |
+| `APPLE_API_ISSUER_ID` | App Store Connect API issuer ID |
 | `APPLE_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application certificate and matching private key exported as a password-protected `.p12` |
 | `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
 | `APPLE_PROVISIONING_PROFILE_BASE64` | Base64-encoded Developer ID profile for `com.davutcaliskan.Tastko`, containing `group.com.davutcaliskan.Tastko` and the signing certificate |
 | `APPLE_API_PRIVATE_KEY` | The notarization API key's complete `.p8` contents |
+| `SPARKLE_PUBLIC_ED_KEY` | Sparkle update public key matching the embedded key |
 | `SPARKLE_PRIVATE_ED_KEY` | Existing Sparkle update private key |
 
-Repository **variables** are `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, and `SPARKLE_PUBLIC_ED_KEY`. The workflow uses Apple team `8J3SWN4QH4` and a team API key with the Developer role for notarization.
+All release configuration is stored in repository secrets. The notarization API key uses the Developer role.
 
 Local Apple signing credentials are stored in the Git-ignored `.signing/` directory with owner-only permissions. Pass secret values to `gh secret set` through standard input. When rotating the certificate, replace both the `.p12` and the profile, which must include the replacement certificate. Keep the Sparkle key stable so installed copies continue to trust updates.
 

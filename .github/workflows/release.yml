@@ -24,9 +24,9 @@ jobs:
         shell: bash
     env:
       TAG_NAME: ${{ github.ref_name }}
-      APPLE_TEAM_ID: 8J3SWN4QH4
-      APPLE_API_KEY_ID: ${{ vars.APPLE_API_KEY_ID }}
-      APPLE_API_ISSUER_ID: ${{ vars.APPLE_API_ISSUER_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
 
     steps:
       - name: Check out tag
@@ -55,11 +55,11 @@ jobs:
 
       - name: Validate update signing configuration
         env:
-          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
           SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
         run: |
           if [[ -z "$SPARKLE_PUBLIC_ED_KEY" || -z "$SPARKLE_PRIVATE_ED_KEY" ]]; then
-            echo "::error::Set the SPARKLE_PUBLIC_ED_KEY repository variable and SPARKLE_PRIVATE_ED_KEY secret. See docs/app-updates.md."
+            echo "::error::Set the SPARKLE_PUBLIC_ED_KEY and SPARKLE_PRIVATE_ED_KEY repository secrets. See docs/app-updates.md."
             exit 1
           fi
 
@@ -75,7 +75,7 @@ jobs:
       - name: Archive app
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.number }}
-          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ secrets.SPARKLE_PUBLIC_ED_KEY }}
           PROFILE_UUID: ${{ steps.signing.outputs.profile_uuid }}
         # CI trusts the Defaults macros at the committed Package.resolved revision.
         run: |
