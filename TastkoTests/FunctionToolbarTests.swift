@@ -45,6 +45,26 @@ struct FunctionToolbarTests {
         #expect(up.cgEvent != nil)
     }
 
+    // MARK: - Brightness Delivery
+    @Test(arguments: [SystemControl.brightnessDown, .brightnessUp])
+    func brightnessButtonsAdjustTheDisplayDirectly(_ control: SystemControl) async throws {
+        var adjustments: [Float] = []
+        let performer = MacOSSystemControlPerformer(adjustBrightness: { adjustments.append($0) })
+        try await performer.perform(control)
+        #expect(control.keyType == nil)
+        #expect(adjustments == [control == .brightnessDown ? -0.0625 : 0.0625])
+    }
+
+    @Test func brightnessFailureIsPropagated() async {
+        enum Failure: Error { case unavailable }
+        let performer = MacOSSystemControlPerformer(adjustBrightness: { _ in
+            throw Failure.unavailable
+        })
+        await #expect(throws: Failure.unavailable) {
+            try await performer.perform(.brightnessUp)
+        }
+    }
+
     // MARK: - Geometry
     @Test(arguments: [CGSize(width: 708, height: 237), CGSize(width: 900, height: 400)])
     func toolbarResizingPreservesNormalKeyScaleAndWidth(_ panelSize: CGSize) {

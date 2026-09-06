@@ -10,15 +10,13 @@ nonisolated enum SystemControl: String, CaseIterable, Hashable, Sendable {
     // MARK: - System Key
     var keyType: Int? {
         switch self {
-        case .brightnessDown: Int(NX_KEYTYPE_BRIGHTNESS_DOWN)
-        case .brightnessUp: Int(NX_KEYTYPE_BRIGHTNESS_UP)
         case .previousTrack: Int(NX_KEYTYPE_REWIND)
         case .playPause: Int(NX_KEYTYPE_PLAY)
         case .nextTrack: Int(NX_KEYTYPE_FAST)
         case .mute: Int(NX_KEYTYPE_MUTE)
         case .volumeDown: Int(NX_KEYTYPE_SOUND_DOWN)
         case .volumeUp: Int(NX_KEYTYPE_SOUND_UP)
-        case .missionControl, .spotlight: nil
+        case .brightnessDown, .brightnessUp, .missionControl, .spotlight: nil
         }
     }
 
@@ -40,8 +38,25 @@ protocol SystemControlPerforming {
 
 // MARK: - MacOSSystemControlPerformer
 nonisolated struct MacOSSystemControlPerformer: SystemControlPerforming {
+    private let adjustBrightness: @MainActor (Float) throws -> Void
+
+    // MARK: - Initialization
+    init(adjustBrightness: @escaping @MainActor (Float) throws -> Void = DisplayBrightness.adjust) {
+        self.adjustBrightness = adjustBrightness
+    }
+
     // MARK: - Execution
     @MainActor func perform(_ control: SystemControl) async throws {
+        switch control {
+        case .brightnessDown:
+            try adjustBrightness(-1 / 16)
+            return
+        case .brightnessUp:
+            try adjustBrightness(1 / 16)
+            return
+        default:
+            break
+        }
         if let applicationURL = control.applicationURL {
             _ = try await NSWorkspace.shared.openApplication(
                 at: applicationURL,
