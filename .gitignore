@@ -1,0 +1,4 @@
+.build/
+.signing/
+buildServer.json
+xcuserdata/

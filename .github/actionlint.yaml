@@ -1,0 +1,5 @@
+# actionlint does not yet recognize GitHub's Xcode 27 preview image.
+# https://github.com/actions/runner-images/issues/14404
+self-hosted-runner:
+  labels:
+    - xcode-27
