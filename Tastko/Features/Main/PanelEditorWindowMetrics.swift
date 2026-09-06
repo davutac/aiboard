@@ -2,6 +2,7 @@ import CoreGraphics
 
 // MARK: - PanelEditorWindowMetrics
 enum PanelEditorWindowMetrics {
+    nonisolated static let panelPadding = 2 * KeyboardDesign.Metrics.panelInset
     nonisolated static let statusBarHeight =
         KeyboardDesign.Metrics.suggestionHeight
         + KeyboardDesign.Metrics.suggestionTopInset
@@ -27,8 +28,8 @@ enum PanelEditorWindowMetrics {
         let keyboardSize =
             panelSize
             ?? CGSize(
-                width: FloatingWindowDefaults.defaultSize.width,
-                height: FloatingWindowDefaults.defaultSize.height - fixedChromeHeight
+                width: FloatingWindowDefaults.defaultSize.width - panelPadding,
+                height: FloatingWindowDefaults.defaultSize.height - fixedChromeHeight - panelPadding
             )
         let minimumSize = contentSize(
             for: keyboardSize,
@@ -36,8 +37,8 @@ enum PanelEditorWindowMetrics {
             functionToolbarProgress: functionToolbarProgress
         )
         let maximumWidthForHeight =
-            (FloatingWindowDefaults.defaultMaximumSize.height - fixedChromeHeight)
-            * keyboardSize.width / keyboardSize.height
+            (FloatingWindowDefaults.defaultMaximumSize.height - fixedChromeHeight - panelPadding)
+            * keyboardSize.width / keyboardSize.height + panelPadding
         let maximumWidth = max(
             minimumSize.width,
             min(FloatingWindowDefaults.defaultMaximumSize.width, maximumWidthForHeight)
@@ -89,8 +90,8 @@ enum PanelEditorWindowMetrics {
         let validScale = max(0, scale)
 
         return CGSize(
-            width: panelSize.width * validScale,
-            height: fixedChromeHeight
+            width: panelSize.width * validScale + panelPadding,
+            height: fixedChromeHeight + panelPadding
                 + ((panelSize.height + functionToolbarBaseHeight
                     * min(1, max(0, functionToolbarProgress))) * validScale)
         )
@@ -107,9 +108,15 @@ enum PanelEditorWindowMetrics {
 
         return contentSize(
             for: panelSize,
-            scale: width / panelSize.width,
+            scale: keyboardScale(for: panelSize, width: width),
             functionToolbarProgress: functionToolbarProgress
         ).height
+    }
+
+    // MARK: - Keyboard Scale
+    nonisolated static func keyboardScale(for panelSize: CGSize, width: CGFloat) -> CGFloat {
+        guard panelSize.width > 0 else { return 1 }
+        return max(0, width - panelPadding) / panelSize.width
     }
 
     // MARK: - Screen Bounds

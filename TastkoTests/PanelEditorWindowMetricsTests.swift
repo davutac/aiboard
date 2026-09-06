@@ -41,8 +41,8 @@ struct PanelEditorWindowMetricsTests {
         #expect(configuration.origin == origin)
         #expect(!configuration.maintainsContentAspectRatio)
         #expect(
-            configuration.contentHeightForWidth?(keyboardSize.width)
-                == keyboardSize.height + PanelEditorWindowMetrics.fixedChromeHeight
+            configuration.contentHeightForWidth?(keyboardSize.width + 10)
+                == keyboardSize.height + 10 + PanelEditorWindowMetrics.fixedChromeHeight
         )
         #expect(configuration.storageKey == "mainPanelEditorShared")
     }
@@ -77,9 +77,33 @@ struct PanelEditorWindowMetricsTests {
         )
         let chromeHeight = PanelEditorWindowMetrics.fixedChromeHeight
 
-        #expect(configuration.size.width == 354)
-        #expect(configuration.size.height == chromeHeight + 118.5)
+        #expect(configuration.size.width == 364)
+        #expect(configuration.size.height == chromeHeight + 128.5)
         #expect(configuration.size == configuration.minSize)
+    }
+
+    // MARK: - Fixed Insets
+    @Test(arguments: [CGFloat(0.5), 1, 2])
+    func paddingLeavesEqualSpaceAroundUniformlyScaledKeys(_ scale: CGFloat) {
+        let panelSize = CGSize(width: 708, height: 237)
+        for progress in [CGFloat(0), 0.5, 1] {
+            let size = PanelEditorWindowMetrics.contentSize(
+                for: panelSize,
+                scale: scale,
+                functionToolbarProgress: progress
+            )
+            let toolbarHeight =
+                PanelEditorWindowMetrics.functionToolbarBaseHeight * scale * progress
+            let layoutWidth = size.width - 2 * KeyboardDesign.Metrics.panelInset
+            let layoutHeight =
+                size.height - PanelEditorWindowMetrics.fixedChromeHeight
+                - toolbarHeight - 2 * KeyboardDesign.Metrics.panelInset
+            #expect(layoutWidth == panelSize.width * scale)
+            #expect(layoutHeight == panelSize.height * scale)
+            #expect(
+                PanelEditorWindowMetrics.keyboardScale(for: panelSize, width: size.width) == scale
+            )
+        }
     }
 
     @Test func reapplyingWindowConfigurationPreservesFrameAndPreventsTallEmptyWindows() {

@@ -79,7 +79,8 @@ struct FunctionToolbarTests {
                     progress: progress
                 )
                 let rowHeight =
-                    PanelEditorWindowMetrics.functionToolbarBaseHeight * width / panelSize.width
+                    PanelEditorWindowMetrics.functionToolbarBaseHeight
+                    * (width - 2 * KeyboardDesign.Metrics.panelInset) / panelSize.width
                     * progress
                 #expect(abs(current.size.height - rowHeight - closed.size.height) < 0.001)
                 #expect(current.size.width == closed.size.width)

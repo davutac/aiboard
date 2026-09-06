@@ -279,27 +279,27 @@ struct PanelEditorProfileImporterTests {
         #expect(panel?.name == "Default")
     }
 
-    @Test func windowMetricsUsePanelWidthWithoutHorizontalPadding() {
+    @Test func windowMetricsIncludeFixedOuterPadding() {
         let size = PanelEditorWindowMetrics.contentSize(
             for: CGSize(width: 708, height: 237)
         )
 
-        #expect(size.width == 708)
+        #expect(size.width == 718)
         #expect(
             size.height
-                == 237 + AppConstants.titlebarHeight + PanelEditorWindowMetrics.statusBarHeight
+                == 247 + AppConstants.titlebarHeight + PanelEditorWindowMetrics.statusBarHeight
         )
     }
 
     @Test func windowMetricsScaleOnlyTheKeyboardHeight() {
         let height = PanelEditorWindowMetrics.contentHeight(
             for: CGSize(width: 708, height: 237),
-            width: 1_416
+            width: 1_426
         )
 
         #expect(
             height
-                == PanelEditorWindowMetrics.fixedChromeHeight + 474
+                == PanelEditorWindowMetrics.fixedChromeHeight + 484
         )
     }
 
@@ -309,14 +309,105 @@ struct PanelEditorProfileImporterTests {
             scale: 0.5
         )
 
-        #expect(size.width == 354)
-        #expect(size.height == PanelEditorWindowMetrics.fixedChromeHeight + 118.5)
+        #expect(size.width == 364)
+        #expect(size.height == PanelEditorWindowMetrics.fixedChromeHeight + 128.5)
         #expect(
             size.height
                 == PanelEditorWindowMetrics.contentHeight(
                     for: CGSize(width: 708, height: 237),
                     width: size.width
                 )
+        )
+    }
+
+    // MARK: - Layout Bounds
+    @Test(arguments: [CGSize(width: 708, height: 237), CGSize(width: 718, height: 247)])
+    func layoutFitsVisibleKeysRegardlessOfSavedCanvas(_ canvas: CGSize) throws {
+        let panel = try layoutPanel(canvas: canvas)
+        #expect(panel.size == canvas)
+        #expect(panel.layoutBounds == CGRect(x: 0, y: 0, width: 708, height: 237))
+    }
+
+    @Test func layoutExcludesHiddenToolbarAndPreservesNestedKeyOffsets() throws {
+        var toolbar = keyButton(id: "TOOLBAR", rect: "{{0, 0}, {900, 400}}", usbKeyCode: 4)
+        toolbar["Actions"] = [
+            [
+                "ActionType": "ActionToolbarVisibility",
+                "ActionParam": [
+                    "PanelID": "ACSH.systemPanel.dynamic.bestFunctionKeys",
+                    "ToolbarVisibilityChangeMode": 3,
+                ],
+            ]
+        ]
+        let panel = try #require(
+            PanelEditorProfileImporter.panels(
+                from: definitions(panelObjects: [
+                    toolbar,
+                    group(
+                        rect: "{{10, 20}, {100, 50}}",
+                        objects: [
+                            keyButton(id: "A", rect: "{{3, 4}, {30, 20}}", usbKeyCode: 4),
+                            keyButton(id: "B", rect: "{{43, 29}, {40, 20}}", usbKeyCode: 5),
+                        ]
+                    ),
+                ]),
+                profileIdentifier: "PROFILE",
+                profileDisplayName: "Fixture"
+            ).first
+        )
+        #expect(panel.layoutBounds == CGRect(x: 13, y: 24, width: 80, height: 45))
+        #expect(panel.visibleButtons[1].frame.origin == CGPoint(x: 53, y: 49))
+    }
+
+    @Test func emptyLayoutRetainsValidCanvasBounds() throws {
+        let panel = try #require(
+            PanelEditorProfileImporter.panels(
+                from: definitions(panelObjects: []),
+                profileIdentifier: "PROFILE",
+                profileDisplayName: "Fixture"
+            ).first
+        )
+        #expect(panel.layoutBounds == CGRect(origin: .zero, size: panel.size))
+    }
+
+    @MainActor
+    @Test func profilesWithExtraCanvasProduceTheSameWindowGeometry() throws {
+        let fitted = try layoutPanel(canvas: CGSize(width: 708, height: 237))
+        let oversized = try layoutPanel(canvas: CGSize(width: 718, height: 247))
+        for width in [CGFloat(400), 820, 1_400] {
+            for progress in [CGFloat(0), 0.5, 1] {
+                let first = PanelEditorWindowMetrics.contentHeight(
+                    for: fitted.layoutBounds.size,
+                    width: width,
+                    functionToolbarProgress: progress
+                )
+                let second = PanelEditorWindowMetrics.contentHeight(
+                    for: oversized.layoutBounds.size,
+                    width: width,
+                    functionToolbarProgress: progress
+                )
+                #expect(first == second)
+            }
+        }
+    }
+
+    // MARK: - Layout Fixture
+    private func layoutPanel(canvas: CGSize) throws -> PanelEditorPanel {
+        var root = definitions(panelObjects: [
+            keyButton(id: "A", rect: "{{0, 0}, {40, 30}}", usbKeyCode: 4),
+            keyButton(id: "B", rect: "{{668, 207}, {40, 30}}", usbKeyCode: 5),
+        ])
+        var panels = try #require(root["Panels"] as? [String: Any])
+        var panel = try #require(panels["USER.PANEL"] as? [String: Any])
+        panel["Rect"] = "{{0, 0}, {\(canvas.width), \(canvas.height)}}"
+        panels["USER.PANEL"] = panel
+        root["Panels"] = panels
+        return try #require(
+            PanelEditorProfileImporter.panels(
+                from: root,
+                profileIdentifier: "PROFILE",
+                profileDisplayName: "Fixture"
+            ).first
         )
     }
 

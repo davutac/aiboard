@@ -288,7 +288,7 @@ final class FloatingWindowController {
             size: FloatingWindowDefaults.size,
             origin: FloatingWindowDefaults.origin,
             minimumScale: FloatingWindowDefaults.minimumKeyboardScale,
-            panelSize: selectedPanel?.size,
+            panelSize: selectedPanel?.layoutBounds.size,
             functionToolbarProgress: functionToolbarProgress ?? self.functionToolbarProgress
         )
         configuration.sizeDidChange = { size in

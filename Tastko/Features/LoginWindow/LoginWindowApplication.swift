@@ -67,16 +67,18 @@ final class LoginWindowApplication: NSObject, NSApplicationDelegate {
             throw CocoaError(.featureUnsupported)
         }
         let bounds = screen.visibleFrame.insetBy(dx: 20, dy: 20)
+        let layoutSize = keyboard.panel.layoutBounds.size
+        let padding = PanelEditorWindowMetrics.panelPadding
         let width = min(
             keyboard.width,
             bounds.width,
-            (bounds.height - LoginWindowKeyboardView.headerHeight) * keyboard.panel.size.width
-                / keyboard.panel.size.height
+            (bounds.height - LoginWindowKeyboardView.headerHeight - padding) * layoutSize.width
+                / layoutSize.height + padding
         )
         let size = CGSize(
             width: width,
-            height: width * keyboard.panel.size.height / keyboard.panel.size.width
-                + LoginWindowKeyboardView.headerHeight
+            height: PanelEditorWindowMetrics.keyboardScale(for: layoutSize, width: width)
+                * layoutSize.height + padding + LoginWindowKeyboardView.headerHeight
         )
         let panel = AlwaysOnTopPanel(
             configuration: .init(

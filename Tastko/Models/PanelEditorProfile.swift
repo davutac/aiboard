@@ -48,6 +48,12 @@ nonisolated struct PanelEditorPanel: Codable, Identifiable, Equatable, Hashable,
                 && $0.secondaryAction != .toggleFunctionToolbar
         }
     }
+
+    // MARK: - Layout Bounds
+    var layoutBounds: CGRect {
+        let bounds = visibleButtons.reduce(CGRect.null) { $0.union($1.frame) }
+        return bounds.isNull ? CGRect(origin: .zero, size: size) : bounds
+    }
 }
 
 // MARK: - PanelEditorProfile

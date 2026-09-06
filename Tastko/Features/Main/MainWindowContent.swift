@@ -75,7 +75,12 @@ struct MainWindowContent: View {
 
             panelContent
                 .frame(maxWidth: .infinity)
-                .frame(height: selectedPanel.map { $0.size.height * functionToolbarScale })
+                .frame(
+                    height: selectedPanel.map {
+                        $0.layoutBounds.height * functionToolbarScale
+                            + PanelEditorWindowMetrics.panelPadding
+                    }
+                )
                 .zIndex(0)
         }
         .frame(maxHeight: .infinity, alignment: .bottom)
@@ -94,8 +99,11 @@ struct MainWindowContent: View {
 
     // MARK: - Panel Content
     private var functionToolbarScale: CGFloat {
-        guard let selectedPanel, selectedPanel.size.width > 0 else { return 1 }
-        return windowDimensions.size.width / selectedPanel.size.width
+        guard let selectedPanel else { return 1 }
+        return PanelEditorWindowMetrics.keyboardScale(
+            for: selectedPanel.layoutBounds.size,
+            width: windowDimensions.size.width
+        )
     }
 
     @ViewBuilder
