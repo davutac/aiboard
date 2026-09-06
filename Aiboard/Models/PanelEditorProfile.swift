@@ -54,6 +54,5 @@ nonisolated struct PanelEditorPanel: Codable, Identifiable, Equatable, Hashable,
 nonisolated struct PanelEditorProfile: Identifiable, Equatable, Hashable, Sendable {
     let id: String
     let displayName: String
-    let sourceURL: URL
     let panels: [PanelEditorPanel]
 }

@@ -14,7 +14,6 @@ nonisolated struct FloatingWindowID: Hashable, Sendable {
 // MARK: - FloatingWindowActions
 struct FloatingWindowActions {
     let hide: () -> Void
-    let resizeContent: (CGSize) -> Void
 }
 
 // MARK: - FloatingWindowManager
@@ -42,7 +41,7 @@ final class FloatingWindowManager {
     ) {
         let controller = controller(for: id)
         let configuration = configurationWithStorage(configuration)
-        let actions = actions(for: id, controller: controller)
+        let actions = actions(for: id)
 
         controller.show(
             configuration: configuration,
@@ -118,16 +117,10 @@ final class FloatingWindowManager {
         return AlwaysOnTopWindowController()
     }
 
-    private func actions(
-        for id: FloatingWindowID,
-        controller: AlwaysOnTopWindowController
-    ) -> FloatingWindowActions {
+    private func actions(for id: FloatingWindowID) -> FloatingWindowActions {
         FloatingWindowActions(
             hide: { [weak self] in
                 self?.hide(id)
-            },
-            resizeContent: { [weak controller] size in
-                controller?.resizeContent(to: size)
             }
         )
     }

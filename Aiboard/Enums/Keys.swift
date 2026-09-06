@@ -1,4 +1,3 @@
-import Carbon
 import CoreGraphics
 
 // MARK: - Key
@@ -130,8 +129,6 @@ nonisolated enum Key: UInt16, CaseIterable, Codable, Hashable, Sendable {
     }
 }
 
-typealias Keys = Key
-
 // MARK: - ModifierKey
 nonisolated enum ModifierKey: String, CaseIterable, Codable, Hashable, Sendable {
     case leftShift
@@ -197,17 +194,6 @@ nonisolated struct KeyModifiers: OptionSet, Codable, Hashable, Sendable {
     static let function = Self(rawValue: 1 << 5)
     static let numericPad = Self(rawValue: 1 << 6)
     static let help = Self(rawValue: 1 << 7)
-
-    static let standard: Self = [
-        .command,
-        .shift,
-        .option,
-        .control,
-        .capsLock,
-        .function,
-        .numericPad,
-        .help,
-    ]
 
     init(rawValue: UInt) {
         self.rawValue = rawValue

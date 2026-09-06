@@ -245,29 +245,3 @@ extension Key {
         }
     }
 }
-
-// MARK: - ModifierKey Display
-extension ModifierKey {
-    nonisolated var displayTitle: String {
-        switch self {
-        case .leftShift:
-            "Left Shift"
-        case .rightShift:
-            "Right Shift"
-        case .leftCommand:
-            "Left Command"
-        case .rightCommand:
-            "Right Command"
-        case .leftOption:
-            "Left Option"
-        case .rightOption:
-            "Right Option"
-        case .leftControl:
-            "Left Control"
-        case .rightControl:
-            "Right Control"
-        case .function:
-            "Function"
-        }
-    }
-}

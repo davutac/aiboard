@@ -4,8 +4,6 @@ import Foundation
 nonisolated struct ResolvedKeyPresentation: Equatable {
     let title: String
     let secondaryTitle: String?
-    let labelKind: KeyLabelKind
-    let labelSymbolName: String
     let leftClickAction: KeyAction
     let rightClickAction: KeyAction
 }
@@ -16,10 +14,6 @@ nonisolated enum KeyboardLanguageLayout: Equatable {
     case qwertz
 
     // MARK: - Resolution
-    static func resolved(for languageCodes: [String]) -> KeyboardLanguageLayout {
-        resolved(for: KeyboardLanguageContext(languageCodes: languageCodes))
-    }
-
     static func resolved(for context: KeyboardLanguageContext) -> KeyboardLanguageLayout {
         if isGermanLanguageCode(context.primaryLanguageCode) {
             return .qwertz
@@ -87,49 +81,10 @@ nonisolated struct KeyboardLanguageContext: Equatable, Hashable {
 
 // MARK: - LanguageAwareKeyResolver
 nonisolated enum LanguageAwareKeyResolver {
-    // MARK: - Key Display
-    static func displayTitle(
-        for key: Key,
-        languageContext: KeyboardLanguageContext
-    ) -> String {
-        presentation(
-            title: key.displayTitle,
-            secondaryTitle: "",
-            labelKind: .text,
-            labelSymbolName: "",
-            leftClickAction: .keyStroke(KeyStroke(key)),
-            rightClickAction: .none,
-            languageContext: languageContext
-        )
-        .title
-    }
-
     // MARK: - Presentation
     static func presentation(
         title: String,
         secondaryTitle: String,
-        labelKind: KeyLabelKind,
-        labelSymbolName: String,
-        leftClickAction: KeyAction,
-        rightClickAction: KeyAction,
-        languageCodes: [String]
-    ) -> ResolvedKeyPresentation {
-        presentation(
-            title: title,
-            secondaryTitle: secondaryTitle,
-            labelKind: labelKind,
-            labelSymbolName: labelSymbolName,
-            leftClickAction: leftClickAction,
-            rightClickAction: rightClickAction,
-            languageContext: KeyboardLanguageContext(languageCodes: languageCodes)
-        )
-    }
-
-    static func presentation(
-        title: String,
-        secondaryTitle: String,
-        labelKind: KeyLabelKind,
-        labelSymbolName: String,
         leftClickAction: KeyAction,
         rightClickAction: KeyAction,
         languageContext: KeyboardLanguageContext
@@ -137,15 +92,12 @@ nonisolated enum LanguageAwareKeyResolver {
         let basePresentation = ResolvedKeyPresentation(
             title: title,
             secondaryTitle: secondaryTitle.isEmpty ? nil : secondaryTitle,
-            labelKind: labelKind,
-            labelSymbolName: labelSymbolName,
             leftClickAction: leftClickAction,
             rightClickAction: rightClickAction
         )
 
         guard
             KeyboardLanguageLayout.resolved(for: languageContext) == .qwertz,
-            labelKind == .text,
             case .keyStroke(let primaryStroke) = leftClickAction,
             primaryStroke.modifiers.isEmpty,
             let overlay = QwertzOverlay.overlay(for: primaryStroke.key)
@@ -166,8 +118,6 @@ nonisolated enum LanguageAwareKeyResolver {
                 baseSecondaryTitle: basePresentation.secondaryTitle,
                 overlay: overlay
             ),
-            labelKind: .text,
-            labelSymbolName: "",
             leftClickAction: .keyStroke(KeyStroke(primaryStroke.key)),
             rightClickAction: rightClickAction
         )

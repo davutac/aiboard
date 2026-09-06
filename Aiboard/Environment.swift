@@ -11,6 +11,5 @@ extension EnvironmentValues {
     @Entry var keyboardLanguageService: KeyboardLanguageService = .shared
     @Entry var panelEditorProfileStore: PanelEditorProfileStore = .shared
     @Entry var soundService: SoundService = .shared
-    @Entry var isKeyboardEditing: Bool = false
     @Entry var windowDimensions: WindowDimensions = .environmentDefault
 }

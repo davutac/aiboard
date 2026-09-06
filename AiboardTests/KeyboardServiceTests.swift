@@ -228,7 +228,6 @@ struct KeyboardServiceTests {
         #expect(Key.keypadEnter.cgKeyCode == 0x4C)
         #expect(Key.f20.cgKeyCode == 0x5A)
         #expect(Key.jisKana.cgKeyCode == 0x68)
-        #expect(Keys.escape == Key.escape)
     }
 
     @Test func keyModifiersMapToCoreGraphicsFlags() {

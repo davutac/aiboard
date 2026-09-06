@@ -55,23 +55,6 @@ final class AlwaysOnTopWindowController {
         panel?.orderOut(nil)
     }
 
-    func resizeContent(to size: CGSize) {
-        guard let panel else {
-            return
-        }
-
-        let currentSize = panel.contentSize(fallback: size)
-        let constrainedSize = constrainedContentSize(size, for: panel, fallback: currentSize)
-
-        guard constrainedSize.isMeaningfullyDifferent(from: currentSize) else {
-            return
-        }
-
-        panel.setFittedContentSize(constrainedSize)
-        publishWindowState(for: panel, fallback: constrainedSize)
-        updateWindowDimensions(for: panel, fallback: constrainedSize)
-    }
-
     // MARK: - Presentation
     private func show(
         configuration: AlwaysOnTopWindowConfiguration,
@@ -210,7 +193,6 @@ final class AlwaysOnTopWindowController {
         }
         panel.liveResizeDidChange = { [weak self] isLiveResizing in
             if isLiveResizing { self?.finishGeometryAnimation?() }
-            self?.windowDimensions.updateLiveResizing(isLiveResizing)
         }
         panel.contentSizeDidChangeDuringLiveResize = { [weak self, weak panel] size in
             guard let self, let panel else { return }
@@ -237,11 +219,7 @@ final class AlwaysOnTopWindowController {
     }
 
     private func updateWindowDimensions(for panel: AlwaysOnTopPanel, fallback: CGSize) {
-        windowDimensions.update(
-            size: panel.contentSize(fallback: fallback),
-            minSize: panel.contentMinSize,
-            maxSize: panel.contentMaxSize
-        )
+        windowDimensions.size = panel.contentSize(fallback: fallback)
     }
 
     private func publishWindowState(for panel: AlwaysOnTopPanel, fallback: CGSize) {
@@ -249,27 +227,4 @@ final class AlwaysOnTopWindowController {
         originDidChange?(panel.frame.origin)
     }
 
-    private func constrainedContentSize(
-        _ size: CGSize,
-        for panel: AlwaysOnTopPanel,
-        fallback: CGSize
-    ) -> CGSize {
-        let validSize = size.validWindowConstraint(fallback: fallback)
-        let minimumSize = panel.contentMinSize.validWindowConstraint(fallback: fallback)
-        let maximumSize = panel.contentMaxSize.validWindowConstraint(
-            fallback: FloatingWindowDefaults.defaultMaximumSize
-        )
-
-        return CGSize(
-            width: min(max(validSize.width, minimumSize.width), maximumSize.width),
-            height: min(max(validSize.height, minimumSize.height), maximumSize.height)
-        )
-    }
-}
-
-extension CGSize {
-    // MARK: - Comparison
-    fileprivate func isMeaningfullyDifferent(from other: CGSize) -> Bool {
-        abs(width - other.width) > 0.5 || abs(height - other.height) > 0.5
-    }
 }

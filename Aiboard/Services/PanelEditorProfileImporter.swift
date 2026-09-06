@@ -78,7 +78,6 @@ nonisolated enum PanelEditorProfileImporter {
         return PanelEditorProfile(
             id: profileIdentifier,
             displayName: displayName,
-            sourceURL: packageURL,
             panels: try panels(
                 from: definitions,
                 profileIdentifier: profileIdentifier,

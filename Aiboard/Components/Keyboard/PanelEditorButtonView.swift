@@ -11,7 +11,6 @@ struct PanelEditorButtonView: View {
     let languageContext: KeyboardLanguageContext
 
     @State private var pressedButton: KeyMouseButton?
-    @State private var releasedButton: KeyMouseButton?
     @State private var isHovered = false
     @State private var repeatTask: Task<Void, Never>?
 
@@ -29,14 +28,10 @@ struct PanelEditorButtonView: View {
 
             KeyMouseEventView(
                 pressedButton: $pressedButton,
-                releasedButton: $releasedButton,
-                allowsDragTracking: false,
                 hitRegion: hitRegion,
                 mousePressed: handleMousePress,
                 mouseReleasedInside: handleMouseRelease,
-                mouseCancelled: handleMouseCancellation,
-                editingDragChanged: { _ in },
-                editingDragEnded: { _ in }
+                mouseCancelled: handleMouseCancellation
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .accessibilityHidden(true)
@@ -61,7 +56,6 @@ struct PanelEditorButtonView: View {
         .onChange(of: keyboardService.inputSession) {
             stopRepeatingAction()
             pressedButton = nil
-            releasedButton = nil
         }
     }
 
@@ -70,8 +64,6 @@ struct PanelEditorButtonView: View {
         LanguageAwareKeyResolver.presentation(
             title: button.title,
             secondaryTitle: button.secondaryTitle ?? "",
-            labelKind: .text,
-            labelSymbolName: "",
             leftClickAction: button.primaryAction,
             rightClickAction: button.secondaryAction,
             languageContext: languageContext
@@ -156,7 +148,6 @@ struct PanelEditorButtonView: View {
 
     private func handleMouseRelease(_ mouseButton: KeyMouseButton) {
         stopRepeatingAction()
-        releasedButton = nil
     }
 
     private func handleMouseCancellation() {

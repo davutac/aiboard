@@ -9,7 +9,6 @@ struct WordSuggestionButton: View {
     @Environment(\.soundService) private var soundService
 
     @State private var pressedButton: KeyMouseButton?
-    @State private var releasedButton: KeyMouseButton?
     @State private var isPressActive = false
     @State private var isHovered = false
 
@@ -33,13 +32,9 @@ struct WordSuggestionButton: View {
             .overlay {
                 KeyMouseEventView(
                     pressedButton: $pressedButton,
-                    releasedButton: $releasedButton,
-                    allowsDragTracking: false,
                     mousePressed: beginPress,
                     mouseReleasedInside: releasePress,
-                    mouseCancelled: cancelPress,
-                    editingDragChanged: { _ in },
-                    editingDragEnded: { _ in }
+                    mouseCancelled: cancelPress
                 )
                 .accessibilityHidden(true)
             }

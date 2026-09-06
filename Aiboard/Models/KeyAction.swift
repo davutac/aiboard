@@ -1,5 +1,3 @@
-import Foundation
-
 // MARK: - KeyAction
 nonisolated enum KeyAction: Codable, Hashable, Sendable {
     case none

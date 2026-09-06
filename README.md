@@ -155,6 +155,6 @@ Source paths below are relative to `Aiboard/`.
 - `Components/AlwaysOnTopWindow`: floating AppKit panels and saved window geometry.
 - `Models/PanelEditorProfile.swift`: imported profile, panel, and button types.
 - `Services`: profile loading, Accessibility, input delivery, predictions, languages, and sound.
-- `Database` and the native keyboard editor: an older SwiftData editor, disconnected from app startup. The active keyboard still uses some of its action types and layout helpers.
+- `Models/KeyAction.swift` and `Enums/Keys.swift`: shared key actions, press behaviors, key codes, and modifiers.
 
 Profile import reads Apple's undocumented format without modifying the source files. A broken package doesn't block other profiles. If a reload fails completely, Aiboard keeps the last working keyboard and shows a warning. A successful reload that finds no profiles clears the keyboard.

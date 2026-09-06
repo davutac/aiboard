@@ -53,24 +53,6 @@ enum FloatingWindowDefaults {
         minimumMiniSideLength...160
     nonisolated static let maximumStoredOriginMagnitude: CGFloat = 100_000
 
-    nonisolated static let defaultRowButtonCount = 17
-    nonisolated static let defaultRowSpacing: CGFloat = 1
-    nonisolated static let defaultContentPadding: CGFloat = 1
-
-    nonisolated static var defaultRowWidth: CGFloat {
-        defaultMinimumSize.width - (defaultContentPadding * 2)
-    }
-
-    nonisolated static var defaultKeySize: CGSize {
-        let totalSpacing = defaultRowSpacing * CGFloat(defaultRowButtonCount - 1)
-        let sideLength = (defaultRowWidth - totalSpacing) / CGFloat(defaultRowButtonCount)
-
-        return CGSize(
-            width: sideLength,
-            height: sideLength
-        )
-    }
-
     nonisolated static var minimumMiniSideLength: CGFloat {
         miniButtonSideLength + (miniContentPadding * 2)
     }
@@ -183,10 +165,6 @@ extension Defaults.Keys {
 
     static let floatingWindowMiniOrigin = Defaults.Key<StoredWindowOrigin?>(
         "floatingWindowMiniOrigin"
-    )
-
-    static let selectedKeyboardID = Defaults.Key<String?>(
-        "selectedKeyboardID"
     )
 
     static let selectedPanelEditorPanelID = Defaults.Key<String?>(

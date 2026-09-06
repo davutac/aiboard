@@ -4,9 +4,6 @@ import SwiftUI
 enum KeyboardDesign {
     enum Palette {
         static let error = Color("KeyboardError")
-        static let windowClose = Color("KeyboardWindowClose")
-        static let windowMinimize = Color("KeyboardWindowMinimize")
-        static let windowSymbol = Color("KeyboardWindowSymbol")
         static let chassis = Color("KeyboardChassis")
         static let chrome = Color("KeyboardChrome")
         static let keyFill = Color("KeyboardKeyFill")

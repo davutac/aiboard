@@ -15,15 +15,6 @@ enum KeyMouseButton: Hashable {
             .rightClick
         }
     }
-
-    var actionSlot: KeyActionSlot {
-        switch self {
-        case .left:
-            .leftClick
-        case .right:
-            .rightClick
-        }
-    }
 }
 
 // MARK: - KeyMouseHitRegion
@@ -53,26 +44,18 @@ enum KeyMouseHitRegion: Hashable {
 // MARK: - KeyMouseEventView
 struct KeyMouseEventView: NSViewRepresentable {
     @Binding var pressedButton: KeyMouseButton?
-    @Binding var releasedButton: KeyMouseButton?
-    let allowsDragTracking: Bool
     var hitRegion: KeyMouseHitRegion = .rectangle
     let mousePressed: (KeyMouseButton) -> Void
     let mouseReleasedInside: (KeyMouseButton) -> Void
     let mouseCancelled: () -> Void
-    let editingDragChanged: (CGSize) -> Void
-    let editingDragEnded: (CGSize) -> Void
 
     // MARK: - Coordinator
     func makeCoordinator() -> Coordinator {
         Coordinator(
             pressedButton: $pressedButton,
-            releasedButton: $releasedButton,
-            allowsDragTracking: allowsDragTracking,
             mousePressed: mousePressed,
             mouseReleasedInside: mouseReleasedInside,
-            mouseCancelled: mouseCancelled,
-            editingDragChanged: editingDragChanged,
-            editingDragEnded: editingDragEnded
+            mouseCancelled: mouseCancelled
         )
     }
 
@@ -81,7 +64,6 @@ struct KeyMouseEventView: NSViewRepresentable {
         let view = KeyMouseEventNSView()
 
         view.delegate = context.coordinator
-        view.allowsDragTracking = allowsDragTracking
         view.hitRegion = hitRegion
 
         return view
@@ -89,15 +71,10 @@ struct KeyMouseEventView: NSViewRepresentable {
 
     func updateNSView(_ nsView: KeyMouseEventNSView, context: Context) {
         context.coordinator.pressedButton = $pressedButton
-        context.coordinator.releasedButton = $releasedButton
-        context.coordinator.allowsDragTracking = allowsDragTracking
         context.coordinator.mousePressed = mousePressed
         context.coordinator.mouseReleasedInside = mouseReleasedInside
         context.coordinator.mouseCancelled = mouseCancelled
-        context.coordinator.editingDragChanged = editingDragChanged
-        context.coordinator.editingDragEnded = editingDragEnded
         nsView.delegate = context.coordinator
-        nsView.allowsDragTracking = allowsDragTracking
         nsView.hitRegion = hitRegion
     }
 
@@ -105,33 +82,21 @@ struct KeyMouseEventView: NSViewRepresentable {
     @MainActor
     final class Coordinator: KeyMouseEventNSViewDelegate {
         var pressedButton: Binding<KeyMouseButton?>
-        var releasedButton: Binding<KeyMouseButton?>
-        var allowsDragTracking: Bool
         var mousePressed: (KeyMouseButton) -> Void
         var mouseReleasedInside: (KeyMouseButton) -> Void
         var mouseCancelled: () -> Void
-        var editingDragChanged: (CGSize) -> Void
-        var editingDragEnded: (CGSize) -> Void
 
         // MARK: - Initialization
         init(
             pressedButton: Binding<KeyMouseButton?>,
-            releasedButton: Binding<KeyMouseButton?>,
-            allowsDragTracking: Bool,
             mousePressed: @escaping (KeyMouseButton) -> Void,
             mouseReleasedInside: @escaping (KeyMouseButton) -> Void,
-            mouseCancelled: @escaping () -> Void,
-            editingDragChanged: @escaping (CGSize) -> Void,
-            editingDragEnded: @escaping (CGSize) -> Void
+            mouseCancelled: @escaping () -> Void
         ) {
             self.pressedButton = pressedButton
-            self.releasedButton = releasedButton
-            self.allowsDragTracking = allowsDragTracking
             self.mousePressed = mousePressed
             self.mouseReleasedInside = mouseReleasedInside
             self.mouseCancelled = mouseCancelled
-            self.editingDragChanged = editingDragChanged
-            self.editingDragEnded = editingDragEnded
         }
 
         // MARK: - KeyMouseEventNSViewDelegate
@@ -148,35 +113,12 @@ struct KeyMouseEventView: NSViewRepresentable {
             didReleaseInside button: KeyMouseButton
         ) {
             pressedButton.wrappedValue = nil
-            releasedButton.wrappedValue = button
             mouseReleasedInside(button)
         }
 
         func keyMouseEventViewDidCancel(_ view: KeyMouseEventNSView) {
             pressedButton.wrappedValue = nil
             mouseCancelled()
-        }
-
-        func keyMouseEventView(
-            _ view: KeyMouseEventNSView,
-            didDrag translation: CGSize
-        ) {
-            guard allowsDragTracking else {
-                return
-            }
-
-            editingDragChanged(translation)
-        }
-
-        func keyMouseEventView(
-            _ view: KeyMouseEventNSView,
-            didEndDrag translation: CGSize
-        ) {
-            guard allowsDragTracking else {
-                return
-            }
-
-            editingDragEnded(translation)
         }
     }
 }
@@ -187,20 +129,15 @@ protocol KeyMouseEventNSViewDelegate: AnyObject {
     func keyMouseEventView(_ view: KeyMouseEventNSView, didPress button: KeyMouseButton)
     func keyMouseEventView(_ view: KeyMouseEventNSView, didReleaseInside button: KeyMouseButton)
     func keyMouseEventViewDidCancel(_ view: KeyMouseEventNSView)
-    func keyMouseEventView(_ view: KeyMouseEventNSView, didDrag translation: CGSize)
-    func keyMouseEventView(_ view: KeyMouseEventNSView, didEndDrag translation: CGSize)
 }
 
 // MARK: - KeyMouseEventNSView
 @MainActor
 final class KeyMouseEventNSView: NSView {
     weak var delegate: (any KeyMouseEventNSViewDelegate)?
-    var allowsDragTracking = false
     var hitRegion: KeyMouseHitRegion = .rectangle
 
     private var pressedButton: KeyMouseButton?
-    private var trackingStartLocationInWindow: CGPoint?
-    private var hasDragged = false
 
     override var isFlipped: Bool {
         true
@@ -223,11 +160,11 @@ final class KeyMouseEventNSView: NSView {
 
     // MARK: - Mouse Events
     override func mouseDown(with event: NSEvent) {
-        beginTracking(.left, with: event)
+        beginTracking(.left)
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        beginTracking(.right, with: event)
+        beginTracking(.right)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -247,18 +184,12 @@ final class KeyMouseEventNSView: NSView {
     }
 
     override func mouseExited(with event: NSEvent) {
-        guard !allowsDragTracking || !hasDragged else {
-            return
-        }
-
         cancelTracking()
     }
 
     // MARK: - Tracking
-    private func beginTracking(_ button: KeyMouseButton, with event: NSEvent) {
+    private func beginTracking(_ button: KeyMouseButton) {
         pressedButton = button
-        trackingStartLocationInWindow = event.locationInWindow
-        hasDragged = false
         delegate?.keyMouseEventView(self, didPress: button)
     }
 
@@ -267,16 +198,7 @@ final class KeyMouseEventNSView: NSView {
             return
         }
 
-        if allowsDragTracking, hasDragged {
-            let translation = dragTranslation(for: event)
-
-            clearTracking()
-            delegate?.keyMouseEventView(self, didEndDrag: translation)
-            delegate?.keyMouseEventViewDidCancel(self)
-            return
-        }
-
-        clearTracking()
+        pressedButton = nil
         let location = convert(event.locationInWindow, from: nil)
 
         if hitRegion.contains(location, in: bounds) {
@@ -292,7 +214,7 @@ final class KeyMouseEventNSView: NSView {
             return
         }
 
-        clearTracking()
+        pressedButton = nil
         delegate?.keyMouseEventViewDidCancel(self)
     }
 
@@ -301,52 +223,9 @@ final class KeyMouseEventNSView: NSView {
             return
         }
 
-        guard allowsDragTracking, button == .left else {
-            let location = convert(event.locationInWindow, from: nil)
-            if !hitRegion.contains(location, in: bounds) {
-                cancelTracking()
-            }
-            return
+        let location = convert(event.locationInWindow, from: nil)
+        if !hitRegion.contains(location, in: bounds) {
+            cancelTracking()
         }
-
-        let translation = dragTranslation(for: event)
-
-        if !hasDragged {
-            let distance = hypot(translation.width, translation.height)
-
-            guard distance >= Self.dragThreshold else {
-                return
-            }
-
-            hasDragged = true
-        }
-
-        delegate?.keyMouseEventView(self, didDrag: translation)
     }
-
-    private func dragTranslation(for event: NSEvent) -> CGSize {
-        guard let trackingStartLocationInWindow else {
-            return .zero
-        }
-
-        let currentLocation = event.locationInWindow
-        let translation = CGSize(
-            width: currentLocation.x - trackingStartLocationInWindow.x,
-            height: trackingStartLocationInWindow.y - currentLocation.y
-        )
-
-        guard translation.width.isFinite, translation.height.isFinite else {
-            return .zero
-        }
-
-        return translation
-    }
-
-    private func clearTracking() {
-        pressedButton = nil
-        trackingStartLocationInWindow = nil
-        hasDragged = false
-    }
-
-    private static let dragThreshold: CGFloat = 3
 }

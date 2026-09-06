@@ -70,18 +70,6 @@ struct KeyMouseEventViewTests {
         #expect(recorder.events == ["press", "cancel"])
     }
 
-    @Test func editorDragContinuesOutsideKey() throws {
-        let view = KeyMouseEventNSView(frame: NSRect(x: 0, y: 0, width: 46, height: 77))
-        view.allowsDragTracking = true
-        let recorder = KeyMouseEventRecorder()
-        view.delegate = recorder
-        view.mouseDown(with: try mouseEvent(.leftMouseDown, at: CGPoint(x: 20, y: 20), in: view))
-        view.mouseDragged(
-            with: try mouseEvent(.leftMouseDragged, at: CGPoint(x: 60, y: 20), in: view)
-        )
-        #expect(recorder.events == ["press", "drag"])
-    }
-
     // MARK: - Fixtures
     private func mouseEvent(
         _ type: NSEvent.EventType,
@@ -106,23 +94,15 @@ struct KeyMouseEventViewTests {
     // MARK: - Coordinator
     @Test func coordinatorDispatchesMouseActionsSynchronously() {
         var pressedButton: KeyMouseButton?
-        var releasedButton: KeyMouseButton?
         var actions: [String] = []
         let coordinator = KeyMouseEventView.Coordinator(
             pressedButton: Binding(
                 get: { pressedButton },
                 set: { pressedButton = $0 }
             ),
-            releasedButton: Binding(
-                get: { releasedButton },
-                set: { releasedButton = $0 }
-            ),
-            allowsDragTracking: false,
             mousePressed: { actions.append("pressed:\($0)") },
             mouseReleasedInside: { actions.append("released:\($0)") },
-            mouseCancelled: { actions.append("cancelled") },
-            editingDragChanged: { _ in },
-            editingDragEnded: { _ in }
+            mouseCancelled: { actions.append("cancelled") }
         )
         let view = KeyMouseEventNSView()
 
@@ -131,7 +111,6 @@ struct KeyMouseEventViewTests {
 
         #expect(actions == ["pressed:left", "released:left"])
         #expect(pressedButton == nil)
-        #expect(releasedButton == .left)
     }
 }
 
@@ -149,11 +128,5 @@ private final class KeyMouseEventRecorder: KeyMouseEventNSViewDelegate {
     }
     func keyMouseEventViewDidCancel(_ view: KeyMouseEventNSView) {
         events.append("cancel")
-    }
-    func keyMouseEventView(_ view: KeyMouseEventNSView, didDrag translation: CGSize) {
-        events.append("drag")
-    }
-    func keyMouseEventView(_ view: KeyMouseEventNSView, didEndDrag translation: CGSize) {
-        events.append("endDrag")
     }
 }

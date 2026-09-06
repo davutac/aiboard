@@ -4,6 +4,7 @@ import SwiftUI
 struct KeyboardDebugWindowToggleButton: View {
     @Environment(\.floatingWindowManager) private var floatingWindowManager
 
+    // MARK: - Body
     var body: some View {
         Button("Keyboard Debug", systemImage: "info.circle") {
             floatingWindowManager.toggle(

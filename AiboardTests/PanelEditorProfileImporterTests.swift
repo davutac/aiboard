@@ -360,7 +360,6 @@ struct PanelEditorProfileImporterTests {
         return PanelEditorProfile(
             id: "PROFILE",
             displayName: "Fixture",
-            sourceURL: URL(filePath: "/Fixture.ascconfig"),
             panels: try PanelEditorProfileImporter.panels(
                 from: root,
                 profileIdentifier: "PROFILE",

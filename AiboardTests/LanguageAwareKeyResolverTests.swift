@@ -10,7 +10,6 @@ struct LanguageAwareKeyResolverTests {
 
         #expect(resolvedKey.title == "Y")
         #expect(resolvedKey.secondaryTitle == nil)
-        #expect(resolvedKey.labelKind == .text)
         #expect(resolvedKey.leftClickAction == .keyStroke(KeyStroke(.y)))
         #expect(resolvedKey.rightClickAction == .keyStroke(KeyStroke(.y, modifiers: [.shift])))
     }
@@ -78,7 +77,10 @@ struct LanguageAwareKeyResolverTests {
         #expect(isoSectionKey.title == "^")
         #expect(isoSectionKey.secondaryTitle == "°")
         #expect(isoSectionKey.leftClickAction == .keyStroke(KeyStroke(.isoSection)))
-        #expect(isoSectionKey.rightClickAction == .keyStroke(KeyStroke(.isoSection, modifiers: [.shift])))
+        #expect(
+            isoSectionKey.rightClickAction
+                == .keyStroke(KeyStroke(.isoSection, modifiers: [.shift]))
+        )
         #expect(graveKey.title == "<")
         #expect(graveKey.secondaryTitle == ">")
         #expect(graveKey.leftClickAction == .keyStroke(KeyStroke(.grave)))
@@ -98,22 +100,6 @@ struct LanguageAwareKeyResolverTests {
         #expect(resolvedKey.secondaryTitle == "Template")
         #expect(resolvedKey.leftClickAction == .text("custom"))
         #expect(resolvedKey.rightClickAction == .text("secondary"))
-    }
-
-    @Test func germanLanguageLeavesSymbolLabelsUnchanged() {
-        let resolvedKey = presentation(
-            title: "Tab",
-            labelKind: .symbol,
-            labelSymbolName: "arrow.right.to.line",
-            leftClickAction: .keyStroke(KeyStroke(.y)),
-            rightClickAction: .keyStroke(KeyStroke(.y, modifiers: [.shift])),
-            languageCodes: ["de-DE"]
-        )
-
-        #expect(resolvedKey.title == "Tab")
-        #expect(resolvedKey.labelKind == .symbol)
-        #expect(resolvedKey.labelSymbolName == "arrow.right.to.line")
-        #expect(resolvedKey.leftClickAction == .keyStroke(KeyStroke(.y)))
     }
 
     @Test func germanLanguageWithShiftedSecondaryActionKeepsPhysicalKeyCode() {
@@ -141,36 +127,10 @@ struct LanguageAwareKeyResolverTests {
         #expect(resolvedKey.leftClickAction == .keyStroke(KeyStroke(.y)))
     }
 
-    @Test func keyDisplayTitleUsesCurrentLanguageOverlay() {
-        let englishContext = KeyboardLanguageContext(languageCodes: ["en"])
-        let germanContext = KeyboardLanguageContext(languageCodes: ["de"])
-
-        #expect(
-            LanguageAwareKeyResolver.displayTitle(
-                for: .y,
-                languageContext: englishContext
-            ) == "Y"
-        )
-        #expect(
-            LanguageAwareKeyResolver.displayTitle(
-                for: .y,
-                languageContext: germanContext
-            ) == "Z"
-        )
-        #expect(
-            LanguageAwareKeyResolver.displayTitle(
-                for: .leftBracket,
-                languageContext: germanContext
-            ) == "Ü"
-        )
-    }
-
     // MARK: - Helpers
     private func presentation(
         title: String = "Y",
         secondaryTitle: String = "",
-        labelKind: KeyLabelKind = .text,
-        labelSymbolName: String = "",
         leftClickAction: KeyAction = .keyStroke(KeyStroke(.y)),
         rightClickAction: KeyAction = .keyStroke(KeyStroke(.y, modifiers: [.shift])),
         languageCodes: [String],
@@ -179,8 +139,6 @@ struct LanguageAwareKeyResolverTests {
         LanguageAwareKeyResolver.presentation(
             title: title,
             secondaryTitle: secondaryTitle,
-            labelKind: labelKind,
-            labelSymbolName: labelSymbolName,
             leftClickAction: leftClickAction,
             rightClickAction: rightClickAction,
             languageContext: KeyboardLanguageContext(

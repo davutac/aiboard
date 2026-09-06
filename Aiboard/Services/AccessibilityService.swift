@@ -85,7 +85,6 @@ nonisolated struct AccessibilityElementDebugInfo: Hashable, Sendable {
     let subrole: String?
     let roleDescription: String?
     let title: String?
-    let isEditableTextInput: Bool
     let isSecureTextInput: Bool
 }
 
@@ -175,7 +174,6 @@ nonisolated enum AccessibilityFocusError: Equatable, LocalizedError, Sendable {
     case accessibilityNotAuthorized
     case focusedApplicationUnavailable
     case focusedApplicationPIDUnavailable(AXError)
-    case focusedTextInputUnavailable
     case secureTextInput
     case attributeUnavailable(String, AXError)
     case invalidAttributeValue(String)
@@ -188,8 +186,6 @@ nonisolated enum AccessibilityFocusError: Equatable, LocalizedError, Sendable {
             "A focused application could not be resolved."
         case .focusedApplicationPIDUnavailable:
             "The focused application's process identifier could not be resolved."
-        case .focusedTextInputUnavailable:
-            "A focused text input could not be resolved."
         case .secureTextInput:
             "The focused input is secure text input."
         case .attributeUnavailable(let attribute, let error):
@@ -383,46 +379,6 @@ final class AccessibilityService {
         return snapshot
     }
 
-    // MARK: - Focused Text
-    func focusedTextValue() throws -> FocusedTextValue {
-        guard refreshAuthorizationStatus() else {
-            throw AccessibilityFocusError.accessibilityNotAuthorized
-        }
-
-        let context = try focusedKeyboardContext()
-        let element = try focusedTextElement(in: context)
-
-        return textValue(for: element)
-    }
-
-    func focusedText() throws -> String? {
-        try focusedTextValue().text
-    }
-
-    func focusedSelectedText() throws -> String? {
-        try focusedTextValue().selectedText
-    }
-
-    func focusedSelectedRange() throws -> AccessibilityTextRange? {
-        try focusedTextValue().selectedRange
-    }
-
-    func focusedCursorLocation() throws -> Int? {
-        try focusedTextValue().cursorLocation
-    }
-
-    func focusedTextBeforeCursor(limit: Int? = nil) throws -> String? {
-        try focusedTextValue().textBeforeCursor(limit: limit)
-    }
-
-    func focusedTextAfterCursor(limit: Int? = nil) throws -> String? {
-        try focusedTextValue().textAfterCursor(limit: limit)
-    }
-
-    func focusedTextAroundCursor(limit: Int = 80) throws -> String? {
-        try focusedTextValue().textAroundCursor(limit: limit)
-    }
-
     // MARK: - Accessibility Helpers
     private func focusedKeyboardContext() throws -> FocusedKeyboardContext {
         let applicationElement = try focusedApplicationElement()
@@ -518,19 +474,6 @@ final class AccessibilityService {
         return range
     }
 
-    private func focusedTextElement(in context: FocusedKeyboardContext) throws -> AXUIElement {
-        guard let focusedElement = context.focusedElement, isEditableTextElement(focusedElement)
-        else {
-            throw AccessibilityFocusError.focusedTextInputUnavailable
-        }
-
-        guard !isSecureTextInput(focusedElement) else {
-            throw AccessibilityFocusError.secureTextInput
-        }
-
-        return focusedElement
-    }
-
     private func isEditableTextElement(_ element: AXUIElement) -> Bool {
         guard let role = stringAttribute(kAXRoleAttribute as CFString, from: element) else {
             return false
@@ -571,7 +514,6 @@ final class AccessibilityService {
                 from: element
             ),
             title: stringAttribute(kAXTitleAttribute as CFString, from: element),
-            isEditableTextInput: role.map { editableTextRoles.contains($0) } ?? false,
             isSecureTextInput: subrole == kAXSecureTextFieldSubrole as String
         )
     }

@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		6C38CC182FBDCB3300571B91 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 6C38CC172FBDCB3300571B91 /* Defaults */; };
-		6C38CC1A2FBDCB3300571B91 /* DefaultsMacros in Frameworks */ = {isa = PBXBuildFile; productRef = 6C38CC192FBDCB3300571B91 /* DefaultsMacros */; };
 		6C9A10012FA0000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 6C9A10032FA0000000000001 /* Sparkle */; };
 /* End PBXBuildFile section */
 
@@ -59,7 +58,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				6C38CC182FBDCB3300571B91 /* Defaults in Frameworks */,
-				6C38CC1A2FBDCB3300571B91 /* DefaultsMacros in Frameworks */,
 				6C9A10012FA0000000000001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -122,7 +120,6 @@
 			name = Aiboard;
 			packageProductDependencies = (
 				6C38CC172FBDCB3300571B91 /* Defaults */,
-				6C38CC192FBDCB3300571B91 /* DefaultsMacros */,
 				6C9A10032FA0000000000001 /* Sparkle */,
 			);
 			productName = Aiboard;
@@ -412,9 +409,9 @@
 		6C80F7022FA77EDB004F5BFA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AIBOARD_CODE_SIGN_ENTITLEMENTS = Aiboard/Aiboard.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AiboardIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				AIBOARD_CODE_SIGN_ENTITLEMENTS = Aiboard/Aiboard.entitlements;
 				CODE_SIGN_ENTITLEMENTS = "$(AIBOARD_CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -452,9 +449,9 @@
 		6C80F7032FA77EDB004F5BFA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				AIBOARD_CODE_SIGN_ENTITLEMENTS = Aiboard/Aiboard.entitlements;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AiboardIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				AIBOARD_CODE_SIGN_ENTITLEMENTS = Aiboard/Aiboard.entitlements;
 				CODE_SIGN_ENTITLEMENTS = "$(AIBOARD_CODE_SIGN_ENTITLEMENTS)";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -639,11 +636,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6C38CC162FBDCB3300571B91 /* XCRemoteSwiftPackageReference "Defaults" */;
 			productName = Defaults;
-		};
-		6C38CC192FBDCB3300571B91 /* DefaultsMacros */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 6C38CC162FBDCB3300571B91 /* XCRemoteSwiftPackageReference "Defaults" */;
-			productName = DefaultsMacros;
 		};
 		6C9A10032FA0000000000001 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
