@@ -13,8 +13,8 @@ It reports native partial-word and next-word, first valid AI suggestion, and ful
 For actual field-capture timings, launch a Release build and inspect the `PredictionTiming` log category while typing in a disposable document:
 
 ```sh
-AIBOARD_BUILD_CONFIGURATION=Release ./script/build_and_run.sh --verify
-log stream --level debug --style compact --predicate 'subsystem == "com.davutcaliskan.Aiboard" AND category == "PredictionTiming"'
+TASTKO_BUILD_CONFIGURATION=Release ./script/build_and_run.sh --verify
+log stream --level debug --style compact --predicate 'subsystem == "com.davutcaliskan.Tastko" AND category == "PredictionTiming"'
 ```
 
 These timing records contain only stage names and elapsed milliseconds. Targets are native suggestions within 100 ms of detecting an edit and warm AI suggestions within 700 ms of the last edit. Measure on the target Mac; Foundation Models latency depends on model readiness and system load. To run unit tests optimized, add `-configuration Release ENABLE_TESTABILITY=YES` to the test command above.

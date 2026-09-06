@@ -1,6 +1,6 @@
-# Aiboard app icon
+# Tastko app icon
 
-Generated using the built-in imagegen tool from the user's keyboard screenshot. The final foreground is `../../Aiboard/AiboardIcon.icon/Assets/keyboard-charcoal-v2.png`. The editable app icon is `../../Aiboard/AiboardIcon.icon` and should be opened in Xcode's Icon Composer. Its neutral gradient uses KeyboardKeyFill and KeyboardChassis dark appearance colors from the app's asset catalog. The earlier white concept is preserved in `keyboard-foreground.png` and is not used by the app.
+Generated using the built-in imagegen tool from the user's keyboard screenshot. The final foreground is `../../Tastko/TastkoIcon.icon/Assets/keyboard-charcoal-v2.png`. The editable app icon is `../../Tastko/TastkoIcon.icon` and should be opened in Xcode's Icon Composer. Its neutral gradient uses KeyboardKeyFill and KeyboardChassis dark appearance colors from the app's asset catalog. The earlier white concept is preserved in `keyboard-foreground.png` and is not used by the app.
 
 ## Simplified icon generation prompt
 
@@ -13,8 +13,8 @@ Keyboard body approximately 1.1 times as wide as tall, centered and occupying 85
 ## Previous generation prompt
 
 Use case: stylized-concept
-Asset type: Aiboard macOS app icon foreground for Apple Icon Composer.
-Input image: reference screenshot of the actual Aiboard accessibility keyboard. Use its visual design and palette, not its screenshot surroundings.
+Asset type: Tastko macOS app icon foreground for Apple Icon Composer.
+Input image: reference screenshot of the actual Tastko accessibility keyboard. Use its visual design and palette, not its screenshot surroundings.
 Primary request: a beautifully crafted simplified app-icon version of THIS keyboard. A charcoal-black rounded keyboard body (#141518), graphite keycaps (#2A2B2E), subtle edges, with the distinctive vivid colored shortcut row: red, coral pink, sky cyan, leaf green, yellow, mint and turquoise. Beneath this colored row, two orderly rows of dark blank keycaps and a wide graphite spacebar. Restrained depth, softly rounded keys, high legibility at tiny sizes, close to the screenshot's understated flat macOS interface. No white or silver keyboard. No blue background. No AI sparkle. No text or letters. No window title or screenshot UI.
 Composition: centered complete keyboard, slight top-down view, front-facing and symmetrical, nearly rectangular approximately 1.6:1 aspect ratio. On a square canvas with padding. Keyboard occupies 80% of canvas width.
 Background: genuinely transparent alpha background. All pixels outside the keyboard must be transparent, not a drawn checkerboard. No shadow or glow outside the object, no surrounding tile or icon plate.
@@ -22,7 +22,7 @@ Background: genuinely transparent alpha background. All pixels outside the keybo
 ## Earlier concept prompt
 
 Use case: stylized-concept
-Asset type: transparent foreground artwork for Aiboard's macOS app icon, assembled in Apple Icon Composer.
+Asset type: transparent foreground artwork for Tastko's macOS app icon, assembled in Apple Icon Composer.
 Primary request: create a polished, distinctive sculpted keyboard symbol for an accessibility keyboard with intelligent text prediction.
 Scene/backdrop: genuinely transparent background, alpha channel; no enclosing app-icon tile.
 Subject: one compact friendly keyboard, front-facing with a very subtle top-down view. A clean rounded body, two orderly rows of large softly rounded blank keycaps and a generous spacebar. The central top key subtly carries a simple four-point intelligence sparkle embossed into its surface. Make the keyboard silhouette strong and immediately readable at small Dock sizes.

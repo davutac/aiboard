@@ -1,0 +1,648 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		6C38CC182FBDCB3300571B91 /* Defaults in Frameworks */ = {isa = PBXBuildFile; productRef = 6C38CC172FBDCB3300571B91 /* Defaults */; };
+		6C9A10012FA0000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 6C9A10032FA0000000000001 /* Sparkle */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6C80F6EE2FA77EDB004F5BFA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6C80F6D62FA77EDA004F5BFA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C80F6DD2FA77EDA004F5BFA;
+			remoteInfo = Tastko;
+		};
+		6C80F6F82FA77EDB004F5BFA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6C80F6D62FA77EDA004F5BFA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C80F6DD2FA77EDA004F5BFA;
+			remoteInfo = Tastko;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		6C80F6DE2FA77EDA004F5BFA /* Tastko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tastko.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C80F6ED2FA77EDB004F5BFA /* TastkoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TastkoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C80F6F72FA77EDB004F5BFA /* TastkoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TastkoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		6C80F6E02FA77EDA004F5BFA /* Tastko */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Tastko;
+			sourceTree = "<group>";
+		};
+		6C80F6F02FA77EDB004F5BFA /* TastkoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TastkoTests;
+			sourceTree = "<group>";
+		};
+		6C80F6FA2FA77EDB004F5BFA /* TastkoUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TastkoUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6C80F6DB2FA77EDA004F5BFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6C38CC182FBDCB3300571B91 /* Defaults in Frameworks */,
+				6C9A10012FA0000000000001 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6EA2FA77EDB004F5BFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6F42FA77EDB004F5BFA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6C80F6D52FA77EDA004F5BFA = {
+			isa = PBXGroup;
+			children = (
+				6C80F6E02FA77EDA004F5BFA /* Tastko */,
+				6C80F6F02FA77EDB004F5BFA /* TastkoTests */,
+				6C80F6FA2FA77EDB004F5BFA /* TastkoUITests */,
+				6C80F6DF2FA77EDA004F5BFA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6C80F6DF2FA77EDA004F5BFA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6C80F6DE2FA77EDA004F5BFA /* Tastko.app */,
+				6C80F6ED2FA77EDB004F5BFA /* TastkoTests.xctest */,
+				6C80F6F72FA77EDB004F5BFA /* TastkoUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		6C80F6DD2FA77EDA004F5BFA /* Tastko */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C80F7012FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "Tastko" */;
+			buildPhases = (
+				6C80F6DA2FA77EDA004F5BFA /* Sources */,
+				6C80F6DB2FA77EDA004F5BFA /* Frameworks */,
+				6C80F6DC2FA77EDA004F5BFA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6C80F6E02FA77EDA004F5BFA /* Tastko */,
+			);
+			name = Tastko;
+			packageProductDependencies = (
+				6C38CC172FBDCB3300571B91 /* Defaults */,
+				6C9A10032FA0000000000001 /* Sparkle */,
+			);
+			productName = Tastko;
+			productReference = 6C80F6DE2FA77EDA004F5BFA /* Tastko.app */;
+			productType = "com.apple.product-type.application";
+		};
+		6C80F6EC2FA77EDB004F5BFA /* TastkoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C80F7042FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "TastkoTests" */;
+			buildPhases = (
+				6C80F6E92FA77EDB004F5BFA /* Sources */,
+				6C80F6EA2FA77EDB004F5BFA /* Frameworks */,
+				6C80F6EB2FA77EDB004F5BFA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C80F6EF2FA77EDB004F5BFA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6C80F6F02FA77EDB004F5BFA /* TastkoTests */,
+			);
+			name = TastkoTests;
+			packageProductDependencies = (
+			);
+			productName = TastkoTests;
+			productReference = 6C80F6ED2FA77EDB004F5BFA /* TastkoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		6C80F6F62FA77EDB004F5BFA /* TastkoUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C80F7072FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "TastkoUITests" */;
+			buildPhases = (
+				6C80F6F32FA77EDB004F5BFA /* Sources */,
+				6C80F6F42FA77EDB004F5BFA /* Frameworks */,
+				6C80F6F52FA77EDB004F5BFA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C80F6F92FA77EDB004F5BFA /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6C80F6FA2FA77EDB004F5BFA /* TastkoUITests */,
+			);
+			name = TastkoUITests;
+			packageProductDependencies = (
+			);
+			productName = TastkoUITests;
+			productReference = 6C80F6F72FA77EDB004F5BFA /* TastkoUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		6C80F6D62FA77EDA004F5BFA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					6C80F6DD2FA77EDA004F5BFA = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					6C80F6EC2FA77EDB004F5BFA = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 6C80F6DD2FA77EDA004F5BFA;
+					};
+					6C80F6F62FA77EDB004F5BFA = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = 6C80F6DD2FA77EDA004F5BFA;
+					};
+				};
+			};
+			buildConfigurationList = 6C80F6D92FA77EDA004F5BFA /* Build configuration list for PBXProject "Tastko" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 6C80F6D52FA77EDA004F5BFA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6C38CC162FBDCB3300571B91 /* XCRemoteSwiftPackageReference "Defaults" */,
+				6C9A10022FA0000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6C80F6DF2FA77EDA004F5BFA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6C80F6DD2FA77EDA004F5BFA /* Tastko */,
+				6C80F6EC2FA77EDB004F5BFA /* TastkoTests */,
+				6C80F6F62FA77EDB004F5BFA /* TastkoUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6C80F6DC2FA77EDA004F5BFA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6EB2FA77EDB004F5BFA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6F52FA77EDB004F5BFA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6C80F6DA2FA77EDA004F5BFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6E92FA77EDB004F5BFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C80F6F32FA77EDB004F5BFA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6C80F6EF2FA77EDB004F5BFA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6C80F6DD2FA77EDA004F5BFA /* Tastko */;
+			targetProxy = 6C80F6EE2FA77EDB004F5BFA /* PBXContainerItemProxy */;
+		};
+		6C80F6F92FA77EDB004F5BFA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6C80F6DD2FA77EDA004F5BFA /* Tastko */;
+			targetProxy = 6C80F6F82FA77EDB004F5BFA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		6C80F6FF2FA77EDB004F5BFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		6C80F7002FA77EDB004F5BFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		6C80F7022FA77EDB004F5BFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				TASTKO_CODE_SIGN_ENTITLEMENTS = Tastko/Tastko.entitlements;
+				ASSETCATALOG_COMPILER_APPICON_NAME = TastkoIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "$(TASTKO_CODE_SIGN_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Configuration/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.Tastko;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SPARKLE_FEED_URL = "https://github.com/davutac/tastko/releases/latest/download/appcast.xml";
+				SPARKLE_PUBLIC_ED_KEY = "255F+fK9HIhEI2Vyw6XyWuvaz8BPVv4yhhl4N4GWFgI=";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6C80F7032FA77EDB004F5BFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				TASTKO_CODE_SIGN_ENTITLEMENTS = Tastko/Tastko.entitlements;
+				ASSETCATALOG_COMPILER_APPICON_NAME = TastkoIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "$(TASTKO_CODE_SIGN_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Configuration/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.Tastko;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(TASTKO_PROVISIONING_PROFILE_SPECIFIER)";
+				REGISTER_APP_GROUPS = YES;
+				SPARKLE_FEED_URL = "https://github.com/davutac/tastko/releases/latest/download/appcast.xml";
+				SPARKLE_PUBLIC_ED_KEY = "255F+fK9HIhEI2Vyw6XyWuvaz8BPVv4yhhl4N4GWFgI=";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		6C80F7052FA77EDB004F5BFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.TastkoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tastko.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Tastko";
+			};
+			name = Debug;
+		};
+		6C80F7062FA77EDB004F5BFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.TastkoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Tastko.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Tastko";
+			};
+			name = Release;
+		};
+		6C80F7082FA77EDB004F5BFA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.TastkoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Tastko;
+			};
+			name = Debug;
+		};
+		6C80F7092FA77EDB004F5BFA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = 8J3SWN4QH4;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.TastkoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Tastko;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6C80F6D92FA77EDA004F5BFA /* Build configuration list for PBXProject "Tastko" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C80F6FF2FA77EDB004F5BFA /* Debug */,
+				6C80F7002FA77EDB004F5BFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C80F7012FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "Tastko" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C80F7022FA77EDB004F5BFA /* Debug */,
+				6C80F7032FA77EDB004F5BFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C80F7042FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "TastkoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C80F7052FA77EDB004F5BFA /* Debug */,
+				6C80F7062FA77EDB004F5BFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C80F7072FA77EDB004F5BFA /* Build configuration list for PBXNativeTarget "TastkoUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C80F7082FA77EDB004F5BFA /* Debug */,
+				6C80F7092FA77EDB004F5BFA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		6C38CC162FBDCB3300571B91 /* XCRemoteSwiftPackageReference "Defaults" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/Defaults.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.8;
+			};
+		};
+		6C9A10022FA0000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		6C38CC172FBDCB3300571B91 /* Defaults */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6C38CC162FBDCB3300571B91 /* XCRemoteSwiftPackageReference "Defaults" */;
+			productName = Defaults;
+		};
+		6C9A10032FA0000000000001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6C9A10022FA0000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 6C80F6D62FA77EDA004F5BFA /* Project object */;
+}

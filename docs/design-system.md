@@ -6,12 +6,12 @@ The keyboard uses rounded, flat keycaps on a neutral chassis. Keys, predictions,
 
 | Concern | Source |
 | --- | --- |
-| Light and dark colors | `Aiboard/Assets.xcassets/Keyboard*.colorset` |
-| Semantic palette, dimensions and fonts | `Aiboard/DesignSystem/KeyboardDesign.swift` |
-| Solid key fill, border, hover, press, and active states | `Aiboard/DesignSystem/KeycapSurface.swift` |
-| Imported key labels, sizing, and active indicator | `Aiboard/Components/Keyboard/PanelEditorKeycap.swift` |
-| SwiftUI keycap buttons | `Aiboard/DesignSystem/KeycapButtonStyle.swift` |
-| Light and dark component previews | `Aiboard/DesignSystem/KeyboardDesignPreview.swift` |
+| Light and dark colors | `Tastko/Assets.xcassets/Keyboard*.colorset` |
+| Semantic palette, dimensions and fonts | `Tastko/DesignSystem/KeyboardDesign.swift` |
+| Solid key fill, border, hover, press, and active states | `Tastko/DesignSystem/KeycapSurface.swift` |
+| Imported key labels, sizing, and active indicator | `Tastko/Components/Keyboard/PanelEditorKeycap.swift` |
+| SwiftUI keycap buttons | `Tastko/DesignSystem/KeycapButtonStyle.swift` |
+| Light and dark component previews | `Tastko/DesignSystem/KeyboardDesignPreview.swift` |
 
 Use `KeyboardDesign.Palette` in keyboard views. Default colors have an Any Appearance value for light mode and a Dark value in the asset catalog. Imported `DisplayColor` fills the entire key surface, and `FontColor` colors both primary and secondary labels, preserving their sRGB components and alpha in either appearance. Missing profile colors use the adaptive defaults. SwiftUI follows the system appearance; the app does not force a color scheme. Adjust both asset variants when changing a color, then check both previews. Keep normal key-label contrast at least 4.5:1.
 

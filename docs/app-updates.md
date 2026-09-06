@@ -1,6 +1,6 @@
 # App updates
 
-Aiboard uses Sparkle 2.9.6 for updates outside the Mac App Store.
+Tastko uses Sparkle 2.9.6 for updates outside the Mac App Store.
 
 ## In the app
 
@@ -15,7 +15,7 @@ Aiboard uses Sparkle 2.9.6 for updates outside the Mac App Store.
 The appcast URL is:
 
 ```text
-https://github.com/davutac/aiboard/releases/latest/download/appcast.xml
+https://github.com/davutac/tastko/releases/latest/download/appcast.xml
 ```
 
 Each release includes its DMG and an `appcast.xml` whose enclosure points to that exact tag's DMG. The latest stable GitHub release supplies the live feed. Prereleases are published with `--latest=false`, so they aren't offered through this feed. Only the latest full update is needed; delta updates aren't generated.
@@ -24,9 +24,9 @@ Each release includes its DMG and an `appcast.xml` whose enclosure points to tha
 
 ## Signing configuration
 
-An Aiboard-specific Ed25519 key has been generated with Sparkle's `generate_keys` tool:
+A Tastko-specific Ed25519 key is stored using Sparkle's `generate_keys` tool:
 
-- Keychain account: `com.davutcaliskan.Aiboard`.
+- Keychain account: `com.davutcaliskan.Tastko`.
 - Public key: embedded through the `SPARKLE_PUBLIC_ED_KEY` build setting and stored as the GitHub Actions repository variable of the same name.
 - Private key: stored in the macOS login Keychain and the repository's `SPARKLE_PRIVATE_ED_KEY` Actions secret. It is never embedded in the app or committed.
 
@@ -36,7 +36,7 @@ After resolving packages, the tools are in:
 
 ```sh
 sparkle_bin=.build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin
-"$sparkle_bin/generate_keys" --account com.davutcaliskan.Aiboard -p
+"$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -p
 ```
 
 To restore GitHub Actions configuration from this Mac's Keychain:
@@ -46,13 +46,13 @@ set -euo pipefail
 umask 077
 key_directory="$(mktemp -d)"
 trap 'rm -rf "$key_directory"' EXIT
-"$sparkle_bin/generate_keys" --account com.davutcaliskan.Aiboard -x "$key_directory/private.key"
-gh secret set SPARKLE_PRIVATE_ED_KEY --repo davutac/aiboard < "$key_directory/private.key"
-gh variable set SPARKLE_PUBLIC_ED_KEY --repo davutac/aiboard \
-  --body "$("$sparkle_bin/generate_keys" --account com.davutcaliskan.Aiboard -p)"
+"$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -x "$key_directory/private.key"
+gh secret set SPARKLE_PRIVATE_ED_KEY --repo davutac/tastko < "$key_directory/private.key"
+gh variable set SPARKLE_PUBLIC_ED_KEY --repo davutac/tastko \
+  --body "$("$sparkle_bin/generate_keys" --account com.davutcaliskan.Tastko -p)"
 ```
 
-On another Mac, import a secure key backup with `generate_keys --account com.davutcaliskan.Aiboard -f /path/to/private.key` first. Debug builds need only the committed public key to check for updates.
+On another Mac, import a secure key backup with `generate_keys --account com.davutcaliskan.Tastko -f /path/to/private.key` first. Debug builds need only the committed public key to check for updates.
 
 ## Release workflow
 
@@ -70,11 +70,11 @@ Configure these GitHub Actions **repository secrets**:
 | --- | --- |
 | `APPLE_CERTIFICATE_P12_BASE64` | Base64-encoded Developer ID Application certificate and matching private key exported as a password-protected `.p12` |
 | `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
-| `APPLE_PROVISIONING_PROFILE_BASE64` | Base64-encoded Developer ID profile for `com.davutcaliskan.Aiboard`, containing `group.com.davutcaliskan.Aiboard` and the signing certificate |
+| `APPLE_PROVISIONING_PROFILE_BASE64` | Base64-encoded Developer ID profile for `com.davutcaliskan.Tastko`, containing `group.com.davutcaliskan.Tastko` and the signing certificate |
 | `APPLE_API_PRIVATE_KEY` | The notarization API key's complete `.p8` contents |
 | `SPARKLE_PRIVATE_ED_KEY` | Existing Sparkle update private key |
 
-Repository **variables** are `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, and `SPARKLE_PUBLIC_ED_KEY`. The workflow uses Apple team `8J3SWN4QH4` and the `Aiboard GitHub Notarization` team API key with the Developer role.
+Repository **variables** are `APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`, and `SPARKLE_PUBLIC_ED_KEY`. The workflow uses Apple team `8J3SWN4QH4` and a team API key with the Developer role for notarization.
 
 Local Apple signing credentials are stored in the Git-ignored `.signing/` directory with owner-only permissions. Pass secret values to `gh secret set` through standard input. When rotating the certificate, replace both the `.p12` and the profile, which must include the replacement certificate. Keep the Sparkle key stable so installed copies continue to trust updates.
 
@@ -84,7 +84,7 @@ Keep `CURRENT_PROJECT_VERSION` increasing; the workflow uses `GITHUB_RUN_NUMBER`
 
 ## Verification
 
-1. Build and launch Aiboard; confirm **Check for Updates…** is enabled and the Settings preference persists.
+1. Build and launch Tastko; confirm **Check for Updates…** is enabled and the Settings preference persists.
 2. While the repository is private, a manual check should show Sparkle's feed retrieval error.
 3. Once public, publish a stable release and run a lower-build-number copy installed in `/Applications`.
 4. With automatic checks enabled, let Sparkle find that release. Confirm the blue update button appears to the left of accessibility without stealing focus.

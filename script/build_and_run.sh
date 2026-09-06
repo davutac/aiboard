@@ -2,9 +2,9 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-CONFIGURATION="${AIBOARD_BUILD_CONFIGURATION:-Debug}"
-APP_NAME="Aiboard"
-BUNDLE_ID="com.davutcaliskan.Aiboard"
+CONFIGURATION="${TASTKO_BUILD_CONFIGURATION:-Debug}"
+APP_NAME="Tastko"
+BUNDLE_ID="com.davutcaliskan.Tastko"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DERIVED_DATA_DIR="$ROOT_DIR/.build/DerivedData"
@@ -19,7 +19,7 @@ stop_app() {
 build_app() {
     xcodebuild \
         -quiet \
-        -project "$ROOT_DIR/Aiboard.xcodeproj" \
+        -project "$ROOT_DIR/Tastko.xcodeproj" \
         -scheme "$APP_NAME" \
         -configuration "$CONFIGURATION" \
         -destination "platform=macOS,arch=$HOST_ARCHITECTURE" \

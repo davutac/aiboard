@@ -3,12 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="$ROOT/.build/LoginWindow"
-PACKAGE="$WORK/Aiboard.pkg"
-APP="/Applications/Aiboard.app"
-HELPER="/Library/PrivilegedHelperTools/AiboardLoginWindow.app"
-AGENT="/Library/LaunchAgents/com.davutcaliskan.Aiboard.LoginWindow.plist"
-RECEIPT="com.davutcaliskan.Aiboard.LoginWindowInstaller"
-IDENTITY="${AIBOARD_SIGNING_IDENTITY:-Apple Development: Davut - Alper Caliskan (P2DG2M6V9C)}"
+PACKAGE="$WORK/Tastko.pkg"
+APP="/Applications/Tastko.app"
+HELPER="/Library/PrivilegedHelperTools/TastkoLoginWindow.app"
+AGENT="/Library/LaunchAgents/com.davutcaliskan.Tastko.LoginWindow.plist"
+RECEIPT="com.davutcaliskan.Tastko.LoginWindowInstaller"
+IDENTITY="${TASTKO_SIGNING_IDENTITY:-Apple Development: Davut - Alper Caliskan (P2DG2M6V9C)}"
 TEAM="8J3SWN4QH4"
 
 require_root() {
@@ -25,13 +25,13 @@ verify_bundle() {
 
 prepare() {
     [[ "$EUID" -ne 0 ]] || { echo "Prepare the package as your normal user." >&2; exit 1; }
-    /usr/bin/xcodebuild -quiet -project "$ROOT/Aiboard.xcodeproj" -scheme Aiboard \
+    /usr/bin/xcodebuild -quiet -project "$ROOT/Tastko.xcodeproj" -scheme Tastko \
         -configuration Release -destination "platform=macOS,arch=$(uname -m)" \
         -derivedDataPath "$ROOT/.build/DerivedData" ENABLE_CODE_COVERAGE=NO build
-    local source="$ROOT/.build/DerivedData/Build/Products/Release/Aiboard.app"
+    local source="$ROOT/.build/DerivedData/Build/Products/Release/Tastko.app"
     local staging
     mkdir -p "$WORK"
-    /usr/bin/nm "$source/Contents/MacOS/Aiboard" > "$WORK/symbols.txt"
+    /usr/bin/nm "$source/Contents/MacOS/Tastko" > "$WORK/symbols.txt"
     if /usr/bin/grep -q '___llvm_profile_runtime' "$WORK/symbols.txt"; then
         echo "Refusing to package a production helper with code coverage enabled." >&2
         exit 1
@@ -42,15 +42,15 @@ prepare() {
         "$staging/Library/LaunchAgents"
     /usr/bin/ditto --norsrc --noextattr --noacl "$source" "$staging$APP"
     /usr/bin/ditto --norsrc --noextattr --noacl "$source" "$staging$HELPER"
-    "$source/Contents/MacOS/Aiboard" --export-login-keyboard "$staging$HELPER/Contents/Resources/LoginKeyboard.json"
-    "$source/Contents/MacOS/Aiboard" --validate-login-keyboard "$staging$HELPER/Contents/Resources/LoginKeyboard.json"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.davutcaliskan.Aiboard.LoginWindow' "$staging$HELPER/Contents/Info.plist"
-    /usr/libexec/PlistBuddy -c 'Set :CFBundleName Aiboard Login Keyboard' "$staging$HELPER/Contents/Info.plist"
+    "$source/Contents/MacOS/Tastko" --export-login-keyboard "$staging$HELPER/Contents/Resources/LoginKeyboard.json"
+    "$source/Contents/MacOS/Tastko" --validate-login-keyboard "$staging$HELPER/Contents/Resources/LoginKeyboard.json"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleIdentifier com.davutcaliskan.Tastko.LoginWindow' "$staging$HELPER/Contents/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Set :CFBundleName Tastko Login Keyboard' "$staging$HELPER/Contents/Info.plist"
     /usr/libexec/PlistBuddy -c 'Set :LSUIElement true' "$staging$HELPER/Contents/Info.plist"
     /usr/bin/codesign --force --sign "$IDENTITY" --options runtime --timestamp=none "$staging$HELPER"
-    verify_bundle "$staging$APP" com.davutcaliskan.Aiboard
-    verify_bundle "$staging$HELPER" com.davutcaliskan.Aiboard.LoginWindow
-    /usr/bin/install -m 644 "$ROOT/script/com.davutcaliskan.Aiboard.LoginWindow.plist" "$staging$AGENT"
+    verify_bundle "$staging$APP" com.davutcaliskan.Tastko
+    verify_bundle "$staging$HELPER" com.davutcaliskan.Tastko.LoginWindow
+    /usr/bin/install -m 644 "$ROOT/script/com.davutcaliskan.Tastko.LoginWindow.plist" "$staging$AGENT"
     /usr/bin/plutil -lint "$staging$AGENT"
     chmod -R go-w "$staging"
     chmod 755 "$staging"
@@ -85,10 +85,10 @@ PY
 }
 
 verify() {
-    verify_bundle "$APP" com.davutcaliskan.Aiboard
-    verify_bundle "$HELPER" com.davutcaliskan.Aiboard.LoginWindow
+    verify_bundle "$APP" com.davutcaliskan.Tastko
+    verify_bundle "$HELPER" com.davutcaliskan.Tastko.LoginWindow
     /usr/bin/plutil -lint "$AGENT"
-    /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Aiboard.LoginWindow.plist"
+    /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Tastko.LoginWindow.plist"
     for path in /Library /Library/PrivilegedHelperTools /Library/LaunchAgents "$HELPER" "$AGENT"; do
         [[ ! -L "$path" && "$(stat -f %u "$path")" == 0 ]] || { echo "Unsafe ownership: $path" >&2; exit 1; }
         [[ -z "$(find "$path" -maxdepth 0 -perm +022 -print)" ]] || { echo "Unsafe permissions: $path" >&2; exit 1; }
@@ -106,13 +106,13 @@ case "${1:-}" in
         for path in "$APP" "$HELPER"; do
             if [[ -e "$path" || -L "$path" ]]; then
                 [[ ! -L "$path" ]] || { echo "Refusing a symlink at $path" >&2; exit 1; }
-                bundle_id="com.davutcaliskan.Aiboard"
+                bundle_id="com.davutcaliskan.Tastko"
                 [[ "$path" != "$HELPER" ]] || bundle_id="$bundle_id.LoginWindow"
                 verify_bundle "$path" "$bundle_id"
             fi
         done
         if [[ -e "$AGENT" || -L "$AGENT" ]]; then
-            [[ ! -L "$AGENT" ]] && /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Aiboard.LoginWindow.plist"
+            [[ ! -L "$AGENT" ]] && /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Tastko.LoginWindow.plist"
         fi
         /usr/sbin/installer -pkg "$PACKAGE" -target /
         verify
@@ -121,16 +121,16 @@ case "${1:-}" in
     remove)
         require_root
         if [[ -e "$HELPER" ]]; then
-            verify_bundle "$HELPER" com.davutcaliskan.Aiboard.LoginWindow
+            verify_bundle "$HELPER" com.davutcaliskan.Tastko.LoginWindow
         fi
         if [[ -e "$AGENT" ]]; then
-            /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Aiboard.LoginWindow.plist"
+            /usr/bin/cmp "$AGENT" "$ROOT/script/com.davutcaliskan.Tastko.LoginWindow.plist"
         fi
         # Removing the LoginWindow-only agent leaves the user's main app and login item intact.
         /bin/rm -f "$AGENT"
         /bin/rm -rf "$HELPER"
         /usr/sbin/pkgutil --forget "$RECEIPT"
-        echo "Pre-login startup removed. The normal Aiboard app remains installed."
+        echo "Pre-login startup removed. The normal Tastko app remains installed."
         ;;
     *) echo "usage: $0 prepare | install | verify | remove" >&2; exit 2 ;;
 esac
