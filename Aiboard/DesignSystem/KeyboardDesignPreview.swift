@@ -10,7 +10,7 @@ private struct KeyboardDesignPreview: View {
             HStack(spacing: KeyboardDesign.Metrics.rowSpacing) {
                 ForEach(["morning", "afternoon", "evening"], id: \.self) { word in
                     Button(word) {}
-                        .buttonStyle(KeycapButtonStyle())
+                        .buttonStyle(.keycap)
                 }
             }
             HStack(spacing: KeyboardDesign.Metrics.rowSpacing) {

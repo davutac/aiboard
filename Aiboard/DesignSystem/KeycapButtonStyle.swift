@@ -10,6 +10,18 @@ struct KeycapButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - ButtonStyle Extension
+extension ButtonStyle where Self == KeycapButtonStyle {
+    static var keycap: KeycapButtonStyle {
+        KeycapButtonStyle()
+    }
+
+    // MARK: - Configured Keycap Style
+    static func keycap(scale: CGFloat = 1, fillsWidth: Bool = false) -> KeycapButtonStyle {
+        KeycapButtonStyle(scale: scale, fillsWidth: fillsWidth)
+    }
+}
+
 // MARK: - KeycapButtonContent
 private struct KeycapButtonContent: View {
     let configuration: ButtonStyleConfiguration

@@ -18,10 +18,10 @@ struct KeyboardStatusView: View {
             statusContent
                 .frame(maxWidth: .infinity, alignment: .leading)
             KeyboardLanguageCycleButton()
-                .buttonStyle(KeycapButtonStyle())
+                .buttonStyle(.keycap)
                 .fixedSize()
             FunctionToolbarToggleButton()
-                .buttonStyle(KeycapButtonStyle())
+                .buttonStyle(.keycap)
                 .fixedSize()
         }
         .font(KeyboardDesign.Typography.toolbar)
@@ -52,6 +52,7 @@ struct KeyboardStatusView: View {
                 Button("Allow Access") {
                     accessibilityService.requestAuthorization()
                 }
+                .buttonStyle(.keycap)
             }
             else if let profileError {
                 Label("Some profiles could not be loaded", systemImage: "exclamationmark.triangle")

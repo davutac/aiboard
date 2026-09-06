@@ -25,7 +25,7 @@ struct FunctionToolbarView: View {
                         Text(item.title)
                     }
                 }
-                .buttonStyle(KeycapButtonStyle(scale: scale, fillsWidth: true))
+                .buttonStyle(.keycap(scale: scale, fillsWidth: true))
                 .help(item.title)
                 .accessibilityLabel(item.title)
                 .accessibilityIdentifier("function-toolbar-\(item.id)")
