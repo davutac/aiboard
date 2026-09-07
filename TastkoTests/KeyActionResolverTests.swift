@@ -77,6 +77,35 @@ struct KeyActionResolverTests {
         #expect(action == .keyStroke(KeyStroke(.s, modifiers: [.command, .shift])))
     }
 
+    // MARK: - Physical Modifiers
+    @Test func physicalChangesUpdateRepeatsWithoutLosingCapturedOneShotModifiers() {
+        let captured: Set<ModifierKey> = [.leftOption]
+        for physical: Set<ModifierKey> in [[.rightShift], []] {
+            let action = KeyActionResolver.action(
+                for: .leftClick,
+                primaryAction: .keyStroke(KeyStroke(.two)),
+                secondaryAction: .keyStroke(KeyStroke(.two, modifiers: [.shift])),
+                activeOneShotModifiers: captured,
+                physicalModifiers: physical
+            )
+            let flags: KeyModifiers = physical.isEmpty ? [.option] : [.option, .shift]
+            #expect(action == .keyStroke(KeyStroke(.two, modifiers: flags)))
+        }
+    }
+
+    @Test func physicalOptionRightClickIncludesShiftAndCapsLock() {
+        let action = KeyActionResolver.action(
+            for: .rightClick,
+            primaryAction: .keyStroke(KeyStroke(.a)),
+            secondaryAction: .keyStroke(KeyStroke(.a, modifiers: [.shift])),
+            activeOneShotModifiers: [],
+            physicalModifiers: [.rightOption],
+            isCapsLockEnabled: true,
+            primaryTitle: "A"
+        )
+        #expect(action == .keyStroke(KeyStroke(.a, modifiers: [.option, .shift, .capsLock])))
+    }
+
     // MARK: - Resolution
     @Test func leftClickUsesPrimaryActionWithoutShift() {
         let action = KeyActionResolver.action(

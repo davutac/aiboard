@@ -97,6 +97,16 @@ nonisolated enum KeyboardServiceError: Equatable, LocalizedError, Sendable {
 final class KeyboardService {
     static let shared = KeyboardService()
 
+    let physicalKeyboard: PhysicalKeyboardState
+
+    var effectiveModifiers: Set<ModifierKey> {
+        activeOneShotModifiers.union(physicalKeyboard.snapshot.modifiers)
+    }
+
+    var effectiveCapsLockEnabled: Bool {
+        isCapsLockEnabled || physicalKeyboard.snapshot.isCapsLockEnabled
+    }
+
     var inputDidChange: (() -> Void)?
     weak var typingObserver: (any KeyboardTypingObserving)?
 
@@ -116,6 +126,7 @@ final class KeyboardService {
 
     // MARK: - Initialization
     init() {
+        self.physicalKeyboard = .shared
         self.targetResolver = AccessibilityService.shared
         self.eventPoster = CGKeyboardEventPoster()
         self.systemControlPerformer = MacOSSystemControlPerformer()
@@ -128,8 +139,10 @@ final class KeyboardService {
         targetResolver: KeyboardTargetResolving,
         eventPoster: KeyboardEventPosting,
         systemControlPerformer: any SystemControlPerforming = MacOSSystemControlPerformer(),
-        canPostEvents: @escaping () -> Bool = { CGPreflightPostEventAccess() }
+        canPostEvents: @escaping () -> Bool = { CGPreflightPostEventAccess() },
+        physicalKeyboard: PhysicalKeyboardState? = nil
     ) {
+        self.physicalKeyboard = physicalKeyboard ?? PhysicalKeyboardState()
         self.targetResolver = targetResolver
         self.eventPoster = eventPoster
         self.systemControlPerformer = systemControlPerformer
@@ -141,6 +154,7 @@ final class KeyboardService {
         guard isScreenLocked != locked || lockScreenInputEnabled != allowsInput else { return }
         isScreenLocked = locked
         lockScreenInputEnabled = allowsInput
+        physicalKeyboard.reset()
         inputSession = UUID()
         typingObserver?.resetTypingSession()
         clearActiveOneShotModifiers()
@@ -218,14 +232,20 @@ final class KeyboardService {
     private func pressAndRelease(_ modifier: ModifierKey) async throws -> KeyboardDeliveryReceipt {
         do {
             try checkLockScreenInput()
+            guard !physicalKeyboard.snapshot.modifiers.contains(modifier) else {
+                return recordSuccess(.modifierState(summary: "physical modifier held"))
+            }
             try eventPoster.postKey(
                 modifier.key,
-                modifiers: activeOneShotModifierFlags.union(modifier.modifiers),
+                modifiers: activeOneShotModifierFlags.union(modifier.modifiers)
+                    .union(physicalKeyboard.snapshot.modifierFlags),
                 keyDown: true
             )
             try eventPoster.postKey(
                 modifier.key,
-                modifiers: activeOneShotModifierFlags,
+                modifiers: activeOneShotModifierFlags.union(
+                    physicalKeyboard.snapshot.modifierFlags
+                ),
                 keyDown: false
             )
 
@@ -402,7 +422,8 @@ final class KeyboardService {
     @discardableResult
     func press(
         _ stroke: KeyStroke,
-        latchedModifiers: [ModifierKey]
+        latchedModifiers: [ModifierKey],
+        modifiersAreResolved: Bool = false
     ) async throws -> KeyboardDeliveryReceipt {
         if stroke.key == .capsLock {
             return toggleCapsLock()
@@ -410,13 +431,19 @@ final class KeyboardService {
 
         do {
             try checkLockScreenInput()
-            let modifiers = stroke.modifiers.union(modifierFlags(for: Set(latchedModifiers)))
+            let hardwareFlags = physicalKeyboard.snapshot.modifierFlags
+            let modifiers = stroke.modifiers
+                .union(modifierFlags(for: Set(latchedModifiers)))
+                .union(modifiersAreResolved ? [] : hardwareFlags)
+            let syntheticModifiers = latchedModifiers.filter {
+                hardwareFlags.intersection($0.modifiers).isEmpty
+            }
 
             if !isScreenLocked { typingObserver?.prepareForInput() }
             try postChord(
                 stroke,
                 modifiers: modifiers,
-                latchedModifiers: latchedModifiers
+                latchedModifiers: syntheticModifiers
             )
             if !isScreenLocked {
                 typingObserver?.didPostKey(KeyStroke(stroke.key, modifiers: modifiers))
@@ -465,7 +492,9 @@ final class KeyboardService {
                 pressedModifiers.insert(modifier)
                 try eventPoster.postKey(
                     modifier.key,
-                    modifiers: modifierFlags(for: pressedModifiers),
+                    modifiers: modifierFlags(for: pressedModifiers).union(
+                        physicalKeyboard.snapshot.modifierFlags
+                    ),
                     keyDown: true
                 )
                 postedModifiers.append(modifier)
@@ -508,7 +537,9 @@ final class KeyboardService {
             remainingModifiers.remove(modifier)
             try eventPoster.postKey(
                 modifier.key,
-                modifiers: modifierFlags(for: remainingModifiers),
+                modifiers: modifierFlags(for: remainingModifiers).union(
+                    physicalKeyboard.snapshot.modifierFlags
+                ),
                 keyDown: false
             )
         }
@@ -521,7 +552,9 @@ final class KeyboardService {
             remainingModifiers.remove(modifier)
             try? eventPoster.postKey(
                 modifier.key,
-                modifiers: modifierFlags(for: remainingModifiers),
+                modifiers: modifierFlags(for: remainingModifiers).union(
+                    physicalKeyboard.snapshot.modifierFlags
+                ),
                 keyDown: false
             )
         }

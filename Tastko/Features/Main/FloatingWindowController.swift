@@ -49,6 +49,7 @@ final class FloatingWindowController {
     }
 
     func show(preservingCurrentOrigin: Bool = false) {
+        PhysicalKeyboardState.shared.refresh()
         isHiddenForInactivity = false
         finishToolbarAnimation()
         let presentationState = presentationState

@@ -74,8 +74,13 @@ nonisolated struct MacOSSystemControlPerformer: SystemControlPerforming {
         guard let downEvent = down.cgEvent, let upEvent = up.cgEvent else {
             throw KeyboardServiceError.eventCreationFailed
         }
-        downEvent.post(tap: .cghidEventTap)
-        upEvent.post(tap: .cghidEventTap)
+        for event in [downEvent, upEvent] {
+            event.setIntegerValueField(
+                .eventSourceUserData,
+                value: CGKeyboardEventPoster.predictionEventTag
+            )
+            event.post(tap: .cghidEventTap)
+        }
     }
 
     // MARK: - Auxiliary Key Events

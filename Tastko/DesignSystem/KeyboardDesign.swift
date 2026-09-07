@@ -11,6 +11,7 @@ enum KeyboardDesign {
         static let secondaryLabel = Color("KeyboardSecondaryLabel")
         static let border = Color("KeyboardBorder")
         static let separator = Color("KeyboardSeparator")
+        static let deadKey = Color.orange
         static let active = Color("KeyboardActive")
 
         // MARK: - Imported Key Colors

@@ -14,6 +14,7 @@ nonisolated enum KeyActionResolver {
         primaryAction: KeyAction,
         secondaryAction: KeyAction,
         activeOneShotModifiers: Set<ModifierKey>,
+        physicalModifiers: Set<ModifierKey> = [],
         isCapsLockEnabled: Bool = false,
         primaryTitle: String = ""
     ) -> KeyAction {
@@ -21,7 +22,8 @@ nonisolated enum KeyActionResolver {
             return primaryAction
         }
 
-        let modifiedPrimary = primaryAction.applying(activeOneShotModifiers)
+        let effectiveModifiers = activeOneShotModifiers.union(physicalModifiers)
+        let modifiedPrimary = primaryAction.applying(effectiveModifiers)
         if isCapsLockEnabled, !modifiedPrimary.isKeyboardShortcut {
             switch modifiedPrimary {
             case .text(let text):
@@ -46,11 +48,18 @@ nonisolated enum KeyActionResolver {
                 leftClickAction(
                     primaryAction: primaryAction,
                     secondaryAction: secondaryAction,
-                    activeOneShotModifiers: activeOneShotModifiers
+                    activeOneShotModifiers: effectiveModifiers
                 )
             }
 
-        return action.applying(activeOneShotModifiers)
+        let resolved = action.applying(effectiveModifiers)
+        if isCapsLockEnabled, case .keyStroke(let stroke) = resolved,
+            stroke.modifiers.contains(.option),
+            stroke.modifiers.intersection([.command, .control, .function]).isEmpty
+        {
+            return .keyStroke(KeyStroke(stroke.key, modifiers: stroke.modifiers.union(.capsLock)))
+        }
+        return resolved
     }
 
     // MARK: - Letter Keys

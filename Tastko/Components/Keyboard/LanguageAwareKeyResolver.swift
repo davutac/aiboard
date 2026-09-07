@@ -6,6 +6,7 @@ nonisolated struct ResolvedKeyPresentation: Equatable {
     let secondaryTitle: String?
     let leftClickAction: KeyAction
     let rightClickAction: KeyAction
+    var isDeadKey = false
 }
 
 // MARK: - KeyboardLanguageLayout
