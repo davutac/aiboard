@@ -1,0 +1,11 @@
+PRODUCT_NAME = Tastko Debug
+PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.Tastko.debug
+PRODUCT_MODULE_NAME = Tastko
+INFOPLIST_KEY_CFBundleDisplayName = $(PRODUCT_NAME)
+// Use a stable signing identity so macOS remembers permissions across rebuilds.
+CODE_SIGN_IDENTITY = Apple Development
+
+// Debug does not use the production App Group or its provisioning profile.
+TASTKO_CODE_SIGN_ENTITLEMENTS =
+REGISTER_APP_GROUPS = NO
+SPARKLE_FEED_URL =

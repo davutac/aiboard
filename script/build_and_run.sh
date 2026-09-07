@@ -3,8 +3,27 @@ set -euo pipefail
 
 MODE="${1:-run}"
 CONFIGURATION="${TASTKO_BUILD_CONFIGURATION:-Debug}"
-APP_NAME="Tastko"
-BUNDLE_ID="com.davutcaliskan.Tastko"
+
+case "$CONFIGURATION" in
+    Debug)
+        APP_NAME="Tastko Debug"
+        ;;
+    Release)
+        APP_NAME="Tastko"
+        ;;
+    *)
+        echo "Unsupported TASTKO_BUILD_CONFIGURATION: $CONFIGURATION (use Debug or Release)" >&2
+        exit 2
+        ;;
+esac
+
+case "$MODE" in
+    build | run | --debug | debug | --logs | logs | --telemetry | telemetry | --verify | verify) ;;
+    *)
+        echo "usage: $0 [build|run|--debug|--logs|--telemetry|--verify]" >&2
+        exit 2
+        ;;
+esac
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DERIVED_DATA_DIR="$ROOT_DIR/.build/DerivedData"
@@ -20,7 +39,7 @@ build_app() {
     xcodebuild \
         -quiet \
         -project "$ROOT_DIR/Tastko.xcodeproj" \
-        -scheme "$APP_NAME" \
+        -scheme Tastko \
         -configuration "$CONFIGURATION" \
         -destination "platform=macOS,arch=$HOST_ARCHITECTURE" \
         -derivedDataPath "$DERIVED_DATA_DIR" \
@@ -31,10 +50,14 @@ open_app() {
     /usr/bin/open -n "$APP_BUNDLE"
 }
 
-stop_app
+if [[ "$MODE" != "build" ]]; then
+    stop_app
+fi
 build_app
 
 case "$MODE" in
+    build)
+        ;;
     run)
         open_app
         ;;
@@ -47,7 +70,7 @@ case "$MODE" in
         ;;
     --telemetry | telemetry)
         open_app
-        /usr/bin/log stream --info --style compact --predicate "subsystem == \"$BUNDLE_ID\""
+        /usr/bin/log stream --info --style compact --predicate "process == \"$APP_NAME\" AND subsystem == \"com.davutcaliskan.Tastko\""
         ;;
     --verify | verify)
         open_app
@@ -62,9 +85,5 @@ case "$MODE" in
 
         echo "$APP_NAME did not launch" >&2
         exit 1
-        ;;
-    *)
-        echo "usage: $0 [run|--debug|--logs|--telemetry|--verify]" >&2
-        exit 2
         ;;
 esac

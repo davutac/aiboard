@@ -1,0 +1,8 @@
+PRODUCT_NAME = Tastko
+PRODUCT_BUNDLE_IDENTIFIER = com.davutcaliskan.Tastko
+PRODUCT_MODULE_NAME = Tastko
+INFOPLIST_KEY_CFBundleDisplayName = $(PRODUCT_NAME)
+TASTKO_CODE_SIGN_ENTITLEMENTS = Tastko/Tastko.entitlements
+PROVISIONING_PROFILE_SPECIFIER = $(TASTKO_PROVISIONING_PROFILE_SPECIFIER)
+REGISTER_APP_GROUPS = YES
+SPARKLE_FEED_URL = https:/$()/github.com/davutac/tastko/releases/latest/download/appcast.xml

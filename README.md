@@ -23,6 +23,32 @@ Requires Xcode with the macOS 27 SDK or later. Open `Tastko.xcodeproj`, or run f
 ./script/build_and_run.sh
 ```
 
+The `Tastko` scheme runs and tests **Debug**; profiling and archiving use **Release**.
+The app identities are defined in `Configuration/Debug.xcconfig` and `Configuration/Release.xcconfig`:
+
+| Configuration | App | Bundle ID |
+| --- | --- | --- |
+| Debug | Tastko Debug.app | `com.davutcaliskan.Tastko.debug` |
+| Release | Tastko.app | `com.davutcaliskan.Tastko` |
+
+Enable each app separately in **System Settings → Privacy & Security → Accessibility**, and Input Monitoring if requested. Keep Debug's Apple Development signing identity and app location stable across rebuilds to retain permissions.
+
+Debug has separate preferences and imported sounds, uses no production App Group, and disables Sparkle updates. Both apps read keyboards from macOS Panel Editor.
+
+The script defaults to Debug and stops only the selected app. To build and run Release locally:
+
+```sh
+TASTKO_BUILD_CONFIGURATION=Release ./script/build_and_run.sh
+```
+
+To build Debug, stop the running Debug app, replace `/Applications/Tastko Debug.app`, and launch the installed copy:
+
+```sh
+./script/install_debug.sh
+```
+
+The installer stages the build before stopping Debug and verifies launch from `/Applications`. Release stays running.
+
 ## Documentation
 
 - [App updates and releases](docs/app-updates.md)

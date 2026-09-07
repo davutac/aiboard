@@ -28,44 +28,51 @@ final class AppUpdateService: NSObject, SPUStandardUserDriverDelegate {
 
     // MARK: - Startup
     func start() {
-        guard !isStarted else { return }
-        guard
-            let feed = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String,
-            let url = URL(string: feed), url.scheme == "https", url.host != nil,
-            let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String,
-            Data(base64Encoded: key)?.count == 32
-        else {
-            unavailabilityReason =
-                "Updates aren’t configured for this build. Set the Sparkle feed URL and public signing key."
-            return
-        }
+        #if DEBUG
+            unavailabilityReason = "Updates are disabled in Tastko Debug."
+        #else
+            guard !isStarted else { return }
+            guard
+                let feed = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String,
+                let url = URL(string: feed), url.scheme == "https", url.host != nil,
+                let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String,
+                Data(base64Encoded: key)?.count == 32
+            else {
+                unavailabilityReason =
+                    "Updates aren’t configured for this build. Set the Sparkle feed URL and public signing key."
+                return
+            }
 
-        // Sparkle's updater and its KVO notifications are main-thread-only.
-        observations = [
-            controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) {
-                [weak self] updater, _ in
-                MainActor.assumeIsolated {
-                    self?.canCheckForUpdates = updater.canCheckForUpdates
-                }
-            },
-            controller.updater.observe(\.automaticallyChecksForUpdates, options: [.initial, .new]) {
-                [weak self] updater, _ in
-                MainActor.assumeIsolated {
-                    self?.automaticChecksEnabled = updater.automaticallyChecksForUpdates
-                }
-            },
-        ]
+            // Sparkle's updater and its KVO notifications are main-thread-only.
+            observations = [
+                controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) {
+                    [weak self] updater, _ in
+                    MainActor.assumeIsolated {
+                        self?.canCheckForUpdates = updater.canCheckForUpdates
+                    }
+                },
+                controller.updater.observe(
+                    \.automaticallyChecksForUpdates,
+                    options: [.initial, .new]
+                ) {
+                    [weak self] updater, _ in
+                    MainActor.assumeIsolated {
+                        self?.automaticChecksEnabled = updater.automaticallyChecksForUpdates
+                    }
+                },
+            ]
 
-        do {
-            try controller.updater.start()
-            isStarted = true
-            unavailabilityReason = nil
-        }
-        catch {
-            observations.removeAll()
-            canCheckForUpdates = false
-            unavailabilityReason = error.localizedDescription
-        }
+            do {
+                try controller.updater.start()
+                isStarted = true
+                unavailabilityReason = nil
+            }
+            catch {
+                observations.removeAll()
+                canCheckForUpdates = false
+                unavailabilityReason = error.localizedDescription
+            }
+        #endif
     }
 
     // MARK: - Manual Update Check

@@ -8,7 +8,7 @@ Tastko uses Sparkle 2.9.6 for updates outside the Mac App Store.
 - Sparkle asks permission to check automatically, normally on the second launch. Its default interval is 24 hours. The Settings toggle uses Sparkle's own persisted preference.
 - When a scheduled check finds an update, a blue download button appears immediately to the left of the keyboard's accessibility icon. Clicking it opens Sparkle's download/install flow, or brings the current update progress into focus. The button clears when that update session finishes, including dismissal or skipping.
 - Scheduled update reminders use the button without taking focus from the app being typed into. The button is disabled while the screen is locked.
-- The pre-login keyboard and command-line export/validation modes never start the updater.
+- Debug builds, the pre-login keyboard, and command-line export/validation modes never start the updater. Tastko Debug has a separate bundle ID and cannot install production updates.
 
 ## Hosting
 
@@ -52,7 +52,7 @@ gh secret set SPARKLE_PRIVATE_ED_KEY --repo davutac/tastko < "$key_directory/pri
   gh secret set SPARKLE_PUBLIC_ED_KEY --repo davutac/tastko
 ```
 
-On another Mac, import a secure key backup with `generate_keys --account com.davutcaliskan.Tastko -f /path/to/private.key` first. Debug builds need only the committed public key to check for updates.
+On another Mac, import a secure key backup with `generate_keys --account com.davutcaliskan.Tastko -f /path/to/private.key` first. Use a Release build to check for updates; it needs only the committed public key.
 
 ## Release workflow
 
@@ -88,7 +88,7 @@ Keep `CURRENT_PROJECT_VERSION` increasing; the workflow uses `GITHUB_RUN_NUMBER`
 
 ## Verification
 
-1. Build and launch Tastko; confirm **Check for Updates…** is enabled and the Settings preference persists.
+1. Build and launch the Release configuration of Tastko; confirm **Check for Updates…** is enabled and the Settings preference persists. In Debug, confirm update controls are disabled.
 2. While the repository is private, a manual check should show Sparkle's feed retrieval error.
 3. Once public, publish a stable release and run a lower-build-number copy installed in `/Applications`.
 4. With automatic checks enabled, let Sparkle find that release. Confirm the blue update button appears to the left of accessibility without stealing focus.
