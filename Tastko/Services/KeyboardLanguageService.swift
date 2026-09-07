@@ -26,6 +26,7 @@ struct KeyboardLanguage: Identifiable, Hashable {
 @MainActor
 final class KeyboardLanguageService {
     static let shared = KeyboardLanguageService()
+    let keyLabels = KeyboardLayoutTranslator()
 
     private(set) var languages: [KeyboardLanguage] = []
     private(set) var selectedLanguageID: String?
@@ -55,6 +56,7 @@ final class KeyboardLanguageService {
 
     // MARK: - Loading
     func refresh() {
+        keyLabels.refresh()
         let sources = availableInputSources()
 
         inputSourcesByID = Dictionary(
@@ -72,6 +74,7 @@ final class KeyboardLanguageService {
     }
 
     func refreshSelectedLanguage() {
+        keyLabels.refresh()
         let currentInputSourceID = currentInputSourceID()
 
         guard currentInputSourceID != selectedLanguageID else {
@@ -100,6 +103,7 @@ final class KeyboardLanguageService {
         let status = TISSelectInputSource(inputSource)
 
         if status == noErr {
+            keyLabels.refresh()
             selectedLanguageID = id
         }
         else {

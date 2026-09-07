@@ -4,9 +4,16 @@ import SwiftUI
 struct KeycapButtonStyle: ButtonStyle {
     var scale: CGFloat = 1
     var fillsWidth = false
+    var isExternallyPressed = false
+
     // MARK: - Body
     func makeBody(configuration: Configuration) -> some View {
-        KeycapButtonContent(configuration: configuration, scale: scale, fillsWidth: fillsWidth)
+        KeycapButtonContent(
+            configuration: configuration,
+            scale: scale,
+            fillsWidth: fillsWidth,
+            isExternallyPressed: isExternallyPressed
+        )
     }
 }
 
@@ -17,8 +24,16 @@ extension ButtonStyle where Self == KeycapButtonStyle {
     }
 
     // MARK: - Configured Keycap Style
-    static func keycap(scale: CGFloat = 1, fillsWidth: Bool = false) -> KeycapButtonStyle {
-        KeycapButtonStyle(scale: scale, fillsWidth: fillsWidth)
+    static func keycap(
+        scale: CGFloat = 1,
+        fillsWidth: Bool = false,
+        isExternallyPressed: Bool = false
+    ) -> KeycapButtonStyle {
+        KeycapButtonStyle(
+            scale: scale,
+            fillsWidth: fillsWidth,
+            isExternallyPressed: isExternallyPressed
+        )
     }
 }
 
@@ -27,8 +42,12 @@ private struct KeycapButtonContent: View {
     let configuration: ButtonStyleConfiguration
     let scale: CGFloat
     let fillsWidth: Bool
+    let isExternallyPressed: Bool
     @State private var isHovered = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    // MARK: - Interaction
+    private var isPressed: Bool { configuration.isPressed || isExternallyPressed }
 
     // MARK: - Body
     var body: some View {
@@ -41,12 +60,12 @@ private struct KeycapButtonContent: View {
             .background {
                 KeycapSurface(
                     shape: RoundedRectangle(cornerRadius: KeyboardDesign.Metrics.keyRadius * scale),
-                    isPressed: configuration.isPressed,
+                    isPressed: isPressed,
                     isHovered: isHovered
                 )
             }
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(reduceMotion ? nil : .smooth(duration: 0.1), value: configuration.isPressed)
+            .scaleEffect(isPressed ? 0.97 : 1)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.1), value: isPressed)
             .contentShape(.rect)
             .onHover { isHovered = $0 }
     }

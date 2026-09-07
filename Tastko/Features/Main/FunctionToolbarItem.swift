@@ -17,6 +17,18 @@ nonisolated struct FunctionToolbarItem: Identifiable {
         .f1, .f2, .f3, .f4, .f5, .f6, .f7, .f8, .f9, .f10, .f11, .f12,
     ]
 
+    // MARK: - Physical Feedback
+    func isPressed(in snapshot: PhysicalKeyboardSnapshot) -> Bool {
+        switch action {
+        case .key(let key):
+            snapshot.pressedKeys.contains(key)
+        case .system(let control):
+            snapshot.pressedControls.contains(control)
+                || (id > 0 && id <= Self.functionKeys.count
+                    && snapshot.pressedKeys.contains(Self.functionKeys[id - 1]))
+        }
+    }
+
     // MARK: - Rows
     static func items(functionIsActive: Bool) -> [FunctionToolbarItem] {
         let keys =

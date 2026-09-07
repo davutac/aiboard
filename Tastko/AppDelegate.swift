@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Application Lifecycle
     func applicationDidFinishLaunching(_ notification: Notification) {
+        PhysicalKeyboardState.shared.start()
         startObservingActiveApplication()
         if let frontmostApplication = NSWorkspace.shared.frontmostApplication {
             floatingWindowController.applicationDidActivate(frontmostApplication)
@@ -38,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        PhysicalKeyboardState.shared.stop()
         pointerVisibilityMonitor.stop()
         DistributedNotificationCenter.default().removeObserver(self)
         floatingWindowController.stopLockScreenDisplay()
@@ -83,6 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func screenUnlocked() {
         floatingWindowController.screenLockDidChange(false)
+        PhysicalKeyboardState.shared.refresh()
         pointerVisibilityMonitor.start()
     }
 

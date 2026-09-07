@@ -563,6 +563,76 @@ struct KeyboardServiceTests {
         #expect(service.lastError == .accessibility(.accessibilityNotAuthorized))
     }
 
+    // MARK: - Physical Modifiers
+    @Test func physicalModifiersAreIncludedWithoutSyntheticModifierTransitions() async throws {
+        let physical = PhysicalKeyboardState(
+            readHardware: {
+                PhysicalKeyboardSnapshot(pressedKeys: [.rightOption], modifiers: [.rightOption])
+            },
+            canObserve: { true }
+        )
+        physical.refresh()
+        let poster = FakeKeyboardEventPoster()
+        let service = KeyboardService(
+            targetResolver: FakeKeyboardTargetResolver(),
+            eventPoster: poster,
+            physicalKeyboard: physical
+        )
+        service.toggleOneShotModifier(.leftOption)
+        try await service.perform(.keyStroke(KeyStroke(.two)))
+        #expect(poster.events == [.key(.two, [.option], true), .key(.two, [.option], false)])
+        #expect(service.activeOneShotModifiers.isEmpty)
+        #expect(service.effectiveModifiers == [.rightOption])
+    }
+
+    @Test func syntheticModifierReleasePreservesPhysicallyHeldFlags() async throws {
+        let physical = PhysicalKeyboardState(
+            readHardware: {
+                PhysicalKeyboardSnapshot(pressedKeys: [.leftOption], modifiers: [.leftOption])
+            },
+            canObserve: { true }
+        )
+        physical.refresh()
+        let poster = FakeKeyboardEventPoster()
+        let service = KeyboardService(
+            targetResolver: FakeKeyboardTargetResolver(),
+            eventPoster: poster,
+            physicalKeyboard: physical
+        )
+        service.toggleOneShotModifier(.rightShift)
+        try await service.perform(.keyStroke(KeyStroke(.two)))
+        #expect(
+            poster.events == [
+                .key(.rightShift, [.option, .shift], true),
+                .key(.two, [.option, .shift], true), .key(.two, [.option, .shift], false),
+                .key(.rightShift, [.option], false),
+            ]
+        )
+    }
+
+    @Test func resolvedCapsLockRightClickDoesNotReapplyPhysicalCapsLock() async throws {
+        let physical = PhysicalKeyboardState(
+            readHardware: {
+                PhysicalKeyboardSnapshot(isCapsLockEnabled: true)
+            },
+            canObserve: { true }
+        )
+        physical.refresh()
+        let poster = FakeKeyboardEventPoster()
+        let service = KeyboardService(
+            targetResolver: FakeKeyboardTargetResolver(),
+            eventPoster: poster,
+            physicalKeyboard: physical
+        )
+        #expect(service.effectiveCapsLockEnabled)
+        try await service.press(
+            KeyStroke(.a),
+            latchedModifiers: [],
+            modifiersAreResolved: true
+        )
+        #expect(poster.events == [.key(.a, [], true), .key(.a, [], false)])
+    }
+
     // MARK: - Keystroke Input
     @Test func pressPostsKeyDownAndKeyUp() async throws {
         let target = focusedKeyboardTarget(route: .window)

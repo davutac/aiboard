@@ -47,6 +47,7 @@ final class LoginWindowApplication: NSObject, NSApplicationDelegate {
             else { throw CocoaError(.fileNoSuchFile) }
             let keyboard = try LoginWindowKeyboard.load(from: url)
             KeyboardService.shared.setScreenLocked(true, allowsInput: true)
+            PhysicalKeyboardState.shared.start()
             try show(keyboard)
             observeSessionEnd()
             logger.notice(
@@ -116,6 +117,7 @@ final class LoginWindowApplication: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        PhysicalKeyboardState.shared.stop()
         KeyboardService.shared.setScreenLocked(true, allowsInput: false)
         sessionTimer?.invalidate()
         terminationSignal?.cancel()

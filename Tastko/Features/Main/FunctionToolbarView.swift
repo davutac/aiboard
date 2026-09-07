@@ -11,7 +11,7 @@ struct FunctionToolbarView: View {
         HStack(spacing: 4 * scale) {
             ForEach(
                 FunctionToolbarItem.items(
-                    functionIsActive: keyboardService.activeOneShotModifiers.contains(.function)
+                    functionIsActive: keyboardService.effectiveModifiers.contains(.function)
                 )
             ) { item in
                 Button {
@@ -25,7 +25,15 @@ struct FunctionToolbarView: View {
                         Text(item.title)
                     }
                 }
-                .buttonStyle(.keycap(scale: scale, fillsWidth: true))
+                .buttonStyle(
+                    .keycap(
+                        scale: scale,
+                        fillsWidth: true,
+                        isExternallyPressed: item.isPressed(
+                            in: keyboardService.physicalKeyboard.snapshot
+                        )
+                    )
+                )
                 .help(item.title)
                 .accessibilityLabel(item.title)
                 .accessibilityIdentifier("function-toolbar-\(item.id)")

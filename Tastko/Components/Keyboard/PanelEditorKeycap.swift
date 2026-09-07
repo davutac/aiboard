@@ -26,7 +26,8 @@ struct PanelEditorKeycap: View {
                 ),
                 isPressed: isPressed,
                 isHovered: isHovered,
-                isActive: isActive
+                isActive: isActive,
+                isDeadKey: presentation.isDeadKey
             )
 
             Text(displayTitle)
