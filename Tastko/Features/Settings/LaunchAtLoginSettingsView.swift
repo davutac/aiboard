@@ -23,10 +23,12 @@ struct LaunchAtLoginSettingsView: View {
             .disabled(isUpdating)
             .accessibilityIdentifier("launch-at-login")
 
-            Text(statusMessage)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .accessibilityIdentifier("launch-at-login-status")
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("launch-at-login-status")
+            }
 
             if preloginInstalled {
                 Text(
@@ -93,12 +95,10 @@ struct LaunchAtLoginSettingsView: View {
     }
 
     // MARK: - Status
-    private var statusMessage: String {
+    private var statusMessage: String? {
         switch status {
-        case .enabled: "Enabled. Tastko opens after you sign in to your Mac."
+        case .enabled, .notRegistered: nil
         case .requiresApproval: "Allow Tastko in macOS Login Items to finish enabling startup."
-        case .notRegistered:
-            "Start Tastko automatically after signing in, including after a restart."
         case .notFound: "macOS could not find this app's login item. Try enabling it again."
         @unknown default: "Login-item status is unavailable."
         }

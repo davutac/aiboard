@@ -5,6 +5,8 @@ import SwiftUI
 @Observable
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    let persistence = AppPersistence()
+    @ObservationIgnored lazy var aiService = AIProviderService(persistence: persistence)
     let updateService = AppUpdateService.shared
     let accessibilityService = AccessibilityService.shared
     let floatingWindowController = FloatingWindowController.shared
@@ -24,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Application Lifecycle
     func applicationDidFinishLaunching(_ notification: Notification) {
+        aiService.start()
         PhysicalKeyboardState.shared.start()
         startObservingActiveApplication()
         if let frontmostApplication = NSWorkspace.shared.frontmostApplication {
@@ -46,6 +49,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         floatingWindowController.stopLockScreenDisplay()
         TextPredictionService.shared.stop()
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+    }
+
+    // MARK: - Provider Shutdown
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task {
+            await aiService.shutdown()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     func applicationShouldHandleReopen(

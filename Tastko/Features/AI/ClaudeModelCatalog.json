@@ -1,0 +1,369 @@
+[
+  {
+    "model": {
+      "id": "claude-fable-5-1",
+      "name": "Claude Fable 5.1",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "xhigh"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.257"
+  },
+  {
+    "model": {
+      "id": "claude-fable-5",
+      "name": "Claude Fable 5",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "xhigh"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.169"
+  },
+  {
+    "model": {
+      "id": "claude-opus-5",
+      "name": "Claude Opus 5",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "xhigh"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.219"
+  },
+  {
+    "model": {
+      "id": "claude-opus-4-8",
+      "name": "Claude Opus 4.8",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "xhigh"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.154"
+  },
+  {
+    "model": {
+      "id": "claude-opus-4-7",
+      "name": "Claude Opus 4.7",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "max"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "xhigh"
+      }
+    },
+    "minimumVersion": "2.1.111"
+  },
+  {
+    "model": {
+      "id": "claude-opus-4-6",
+      "name": "Claude Opus 4.6",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.0"
+  },
+  {
+    "model": {
+      "id": "claude-opus-4-5",
+      "name": "Claude Opus 4.5",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.0"
+  },
+  {
+    "model": {
+      "id": "claude-sonnet-5",
+      "name": "Claude Sonnet 5",
+      "isDefault": true,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "xhigh",
+            "name": "Extra High",
+            "argument": "xhigh"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "max"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.0"
+  },
+  {
+    "model": {
+      "id": "claude-sonnet-4-6",
+      "name": "Claude Sonnet 4.6",
+      "isDefault": false,
+      "option": {
+        "id": "effort",
+        "name": "Reasoning",
+        "choices": [
+          {
+            "id": "low",
+            "name": "Low",
+            "argument": "low"
+          },
+          {
+            "id": "medium",
+            "name": "Medium",
+            "argument": "medium"
+          },
+          {
+            "id": "high",
+            "name": "High",
+            "argument": "high"
+          },
+          {
+            "id": "max",
+            "name": "Max",
+            "argument": "high"
+          }
+        ],
+        "defaultValue": "high"
+      }
+    },
+    "minimumVersion": "2.1.0"
+  },
+  {
+    "model": {
+      "id": "claude-haiku-4-5",
+      "name": "Claude Haiku 4.5",
+      "isDefault": false,
+      "option": {
+        "id": "thinking",
+        "name": "Thinking",
+        "choices": [
+          {
+            "id": "on",
+            "name": "On"
+          },
+          {
+            "id": "off",
+            "name": "Off"
+          }
+        ]
+      }
+    },
+    "minimumVersion": "2.1.0"
+  }
+]

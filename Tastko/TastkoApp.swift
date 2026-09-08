@@ -12,8 +12,9 @@ struct TastkoApp: App {
         }
 
         Settings {
-            SettingsView(updateService: appDelegate.updateService)
+            SettingsView(updateService: appDelegate.updateService, aiService: appDelegate.aiService)
         }
+        .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button("Check for Updates…", action: appDelegate.updateService.checkForUpdates)

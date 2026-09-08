@@ -44,10 +44,6 @@ struct ButtonSoundSettingsView: View {
                 }
                 .disabled(buttonSound == .none)
             }
-
-            Text("Used for keyboard keys, word suggestions, and keyboard controls.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
         }
         .fileImporter(
             isPresented: $isChoosingFile,

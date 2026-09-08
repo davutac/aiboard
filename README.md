@@ -53,6 +53,7 @@ The installer stages the build before stopping Debug and verifies launch from `/
 
 - [App updates and releases](docs/app-updates.md)
 - [Text prediction](docs/text-prediction-performance.md)
+- [AI providers and Debug requests](docs/ai-providers.md)
 - [Login-window keyboard](docs/login-window-keyboard.md)
 - [Experimental lock-screen keyboard](docs/lock-screen-display.md)
 - [Design system](docs/design-system.md)
