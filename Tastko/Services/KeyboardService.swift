@@ -24,6 +24,14 @@ protocol KeyboardEventPosting {
     func replacePrefix(_ count: Int, with text: String, to target: FocusedKeyboardTarget) throws
     func postTextToSystemFocus(_ text: String) throws
     func postKey(_ key: Key, modifiers: KeyModifiers, keyDown: Bool) throws
+    func postKeyRepeat(_ key: Key, modifiers: KeyModifiers) throws
+}
+
+extension KeyboardEventPosting {
+    // MARK: - Repeat Delivery
+    func postKeyRepeat(_ key: Key, modifiers: KeyModifiers) throws {
+        try postKey(key, modifiers: modifiers, keyDown: true)
+    }
 }
 
 // MARK: - KeyboardDeliveryMethod
@@ -99,12 +107,19 @@ final class KeyboardService {
 
     let physicalKeyboard: PhysicalKeyboardState
 
-    var effectiveModifiers: Set<ModifierKey> {
-        activeOneShotModifiers.union(physicalKeyboard.snapshot.modifiers)
+    var heldModifiers: Set<ModifierKey> {
+        physicalKeyboard.snapshot.modifiers.union(functionPress == nil ? [] : [.function])
     }
 
-    var effectiveCapsLockEnabled: Bool {
-        isCapsLockEnabled || physicalKeyboard.snapshot.isCapsLockEnabled
+    var effectiveModifiers: Set<ModifierKey> {
+        activeOneShotModifiers.union(heldModifiers)
+    }
+
+    var isCapsLockEnabled: Bool { physicalKeyboard.snapshot.isCapsLockEnabled }
+    var effectiveCapsLockEnabled: Bool { isCapsLockEnabled }
+
+    private var heldModifierFlags: KeyModifiers {
+        physicalKeyboard.snapshot.modifierFlags.union(functionPress == nil ? [] : [.function])
     }
 
     var inputDidChange: (() -> Void)?
@@ -121,8 +136,17 @@ final class KeyboardService {
     private(set) var lastError: KeyboardServiceError?
     private(set) var lastReceipt: KeyboardDeliveryReceipt?
     private(set) var activeOneShotModifiers: Set<ModifierKey> = []
-    private(set) var isCapsLockEnabled = false
     private var activeOneShotModifierOrder: [ModifierKey] = []
+    private var postedModifiers: [ModifierKey] = []
+    private var functionPress: UUID?
+    private struct HeldKeyPress {
+        let stroke: KeyStroke
+        let modifiers: [ModifierKey]
+        let initialHeldFlags: KeyModifiers
+        var keyIsDown = true
+    }
+    private var keyPresses: [UUID: HeldKeyPress] = [:]
+    private let toggleSystemCapsLock: @MainActor () throws -> Bool
 
     // MARK: - Initialization
     init() {
@@ -130,6 +154,7 @@ final class KeyboardService {
         self.targetResolver = AccessibilityService.shared
         self.eventPoster = CGKeyboardEventPoster()
         self.systemControlPerformer = MacOSSystemControlPerformer()
+        self.toggleSystemCapsLock = SystemCapsLock.toggle
         self.canPostEvents = {
             (getuid() != 0 || LoginWindowSession.isActive) && CGPreflightPostEventAccess()
         }
@@ -140,26 +165,28 @@ final class KeyboardService {
         eventPoster: KeyboardEventPosting,
         systemControlPerformer: any SystemControlPerforming = MacOSSystemControlPerformer(),
         canPostEvents: @escaping () -> Bool = { CGPreflightPostEventAccess() },
-        physicalKeyboard: PhysicalKeyboardState? = nil
+        physicalKeyboard: PhysicalKeyboardState? = nil,
+        toggleSystemCapsLock: @escaping @MainActor () throws -> Bool = SystemCapsLock.toggle
     ) {
         self.physicalKeyboard = physicalKeyboard ?? PhysicalKeyboardState()
         self.targetResolver = targetResolver
         self.eventPoster = eventPoster
         self.systemControlPerformer = systemControlPerformer
         self.canPostEvents = canPostEvents
+        self.toggleSystemCapsLock = toggleSystemCapsLock
     }
 
     // MARK: - Lock-Screen Input
     func setScreenLocked(_ locked: Bool, allowsInput: Bool) {
         guard isScreenLocked != locked || lockScreenInputEnabled != allowsInput else { return }
+        lastError = nil
+        releaseAllModifiers()
         isScreenLocked = locked
         lockScreenInputEnabled = allowsInput
         physicalKeyboard.reset()
         inputSession = UUID()
         typingObserver?.resetTypingSession()
-        clearActiveOneShotModifiers()
         lastReceipt = nil
-        lastError = nil
     }
 
     private func checkLockScreenInput() throws {
@@ -200,13 +227,13 @@ final class KeyboardService {
     @discardableResult
     func pressFunctionToolbarKey(_ key: Key) async throws -> KeyboardDeliveryReceipt {
         let modifiers = consumeActiveOneShotModifiers().filter { $0 != .function }
-        return try await press(KeyStroke(key), latchedModifiers: modifiers)
+        return try press(KeyStroke(key), latchedModifiers: modifiers)
     }
 
     @discardableResult
     func performSystemControl(_ control: SystemControl) async throws -> KeyboardDeliveryReceipt {
-        clearActiveOneShotModifiers()
         do {
+            try clearActiveOneShotModifiers()
             try await systemControlPerformer.perform(control)
             return recordSuccess(.systemKeyEvent(summary: "system control \(control.rawValue)"))
         }
@@ -220,11 +247,12 @@ final class KeyboardService {
         _ modifier: ModifierKey,
         behavior: KeyPressBehavior
     ) async throws -> KeyboardDeliveryReceipt {
-        switch behavior {
+        if modifier == .function { return try toggleFunctionKey() }
+        return switch behavior {
         case .pressAndRelease:
             try await pressAndRelease(modifier)
         case .oneShot:
-            toggleOneShotModifier(modifier)
+            try toggleOneShotModifier(modifier)
         }
     }
 
@@ -232,22 +260,9 @@ final class KeyboardService {
     private func pressAndRelease(_ modifier: ModifierKey) async throws -> KeyboardDeliveryReceipt {
         do {
             try checkLockScreenInput()
-            guard !physicalKeyboard.snapshot.modifiers.contains(modifier) else {
-                return recordSuccess(.modifierState(summary: "physical modifier held"))
-            }
-            try eventPoster.postKey(
-                modifier.key,
-                modifiers: activeOneShotModifierFlags.union(modifier.modifiers)
-                    .union(physicalKeyboard.snapshot.modifierFlags),
-                keyDown: true
-            )
-            try eventPoster.postKey(
-                modifier.key,
-                modifiers: activeOneShotModifierFlags.union(
-                    physicalKeyboard.snapshot.modifierFlags
-                ),
-                keyDown: false
-            )
+            let wasPosted = postedModifiers.contains(modifier)
+            try postModifierDown(modifier)
+            if !wasPosted { try postModifierUp(modifier) }
 
             return recordSuccess(
                 .systemKeyEvent(
@@ -261,26 +276,155 @@ final class KeyboardService {
     }
 
     @discardableResult
-    func toggleOneShotModifier(_ modifier: ModifierKey) -> KeyboardDeliveryReceipt {
-        if activeOneShotModifiers.contains(modifier) {
-            activeOneShotModifiers.remove(modifier)
-            activeOneShotModifierOrder.removeAll { $0 == modifier }
-
-            return recordSuccess(
-                .modifierState(
-                    summary: "modifier(\(modifier) unlatched)"
-                )
-            )
+    func toggleOneShotModifier(_ modifier: ModifierKey) throws -> KeyboardDeliveryReceipt {
+        if modifier == .function { return try toggleFunctionKey() }
+        do {
+            try checkLockScreenInput()
+            if activeOneShotModifiers.contains(modifier) {
+                try postModifierUp(modifier)
+                activeOneShotModifiers.remove(modifier)
+                activeOneShotModifierOrder.removeAll { $0 == modifier }
+            }
+            else {
+                try postModifierDown(modifier)
+                activeOneShotModifiers.insert(modifier)
+                activeOneShotModifierOrder.append(modifier)
+            }
+            return recordSuccess(.modifierState(summary: "modifier(\(modifier) toggled)"))
         }
+        catch { throw recordFailure(error) }
+    }
 
-        activeOneShotModifiers.insert(modifier)
-        activeOneShotModifierOrder.append(modifier)
+    // MARK: - Fn Toggle
+    @discardableResult
+    func toggleFunctionKey() throws -> KeyboardDeliveryReceipt {
+        if let functionPress {
+            try endFunctionPress(functionPress)
+        }
+        else {
+            _ = try beginFunctionPress()
+        }
+        return recordSuccess(.systemKeyEvent(summary: "Fn toggled"))
+    }
 
-        return recordSuccess(
-            .modifierState(
-                summary: "modifier(\(modifier) latched)"
+    // MARK: - Held Fn
+    func beginFunctionPress() throws -> UUID? {
+        do {
+            try checkLockScreenInput()
+            guard functionPress == nil, !physicalKeyboard.snapshot.modifiers.contains(.function)
+            else { return nil }
+            try eventPoster.postKey(
+                .function,
+                modifiers: modifierFlags(for: Set(postedModifiers)).union(heldModifierFlags)
+                    .union(.function),
+                keyDown: true
             )
-        )
+            let token = UUID()
+            functionPress = token
+            _ = recordSuccess(.systemKeyEvent(summary: "Fn pressed"))
+            return token
+        }
+        catch { throw recordFailure(error) }
+    }
+
+    // MARK: - Fn Release
+    func endFunctionPress(_ token: UUID) throws {
+        guard functionPress == token else { return }
+        do {
+            try eventPoster.postKey(
+                .function,
+                modifiers: modifierFlags(for: Set(postedModifiers))
+                    .union(physicalKeyboard.snapshot.modifierFlags),
+                keyDown: false
+            )
+            functionPress = nil
+            _ = recordSuccess(.systemKeyEvent(summary: "Fn released"))
+        }
+        catch { throw recordFailure(error) }
+    }
+
+    // MARK: - Held Keys
+    func beginKeyPress(_ stroke: KeyStroke, latchedModifiers: [ModifierKey]) throws -> UUID {
+        let releases = latchedModifiers.filter { !activeOneShotModifiers.contains($0) }
+        do {
+            try checkLockScreenInput()
+            try releaseUnclaimedModifiers(keeping: latchedModifiers)
+            for modifier in latchedModifiers { try postModifierDown(modifier) }
+            let flags = stroke.modifiers.union(modifierFlags(for: Set(latchedModifiers)))
+                .union(functionPress == nil ? [] : [.function])
+            let resolved = KeyStroke(stroke.key, modifiers: flags)
+            if !isScreenLocked { typingObserver?.prepareForInput() }
+            try eventPoster.postKey(stroke.key, modifiers: flags, keyDown: true)
+            let token = UUID()
+            keyPresses[token] = HeldKeyPress(
+                stroke: resolved,
+                modifiers: releases,
+                initialHeldFlags: heldModifierFlags
+            )
+            if !isScreenLocked { typingObserver?.didPostKey(resolved) }
+            _ = recordSuccess(.systemKeyEvent(summary: "key(\(stroke.key)) pressed"))
+            return token
+        }
+        catch {
+            postModifierUpsBestEffort(releases)
+            throw recordFailure(error)
+        }
+    }
+
+    // MARK: - Key Repeat
+    func repeatKeyPress(_ token: UUID, modifiers: KeyModifiers? = nil) throws {
+        guard let press = keyPresses[token], press.keyIsDown else { return }
+        do {
+            try checkLockScreenInput()
+            let flags = currentFlags(for: press, resolved: modifiers)
+            try eventPoster.postKeyRepeat(press.stroke.key, modifiers: flags)
+            if !isScreenLocked {
+                typingObserver?.didPostKey(KeyStroke(press.stroke.key, modifiers: flags))
+            }
+        }
+        catch { throw recordFailure(error) }
+    }
+
+    // MARK: - Key Release
+    func endKeyPress(_ token: UUID, modifiers: KeyModifiers? = nil) throws {
+        guard let press = keyPresses[token] else { return }
+        do {
+            if press.keyIsDown {
+                try eventPoster.postKey(
+                    press.stroke.key,
+                    modifiers: currentFlags(for: press, resolved: modifiers),
+                    keyDown: false
+                )
+                keyPresses[token]?.keyIsDown = false
+            }
+            try postModifierUps(press.modifiers)
+            keyPresses.removeValue(forKey: token)
+            _ = recordSuccess(.systemKeyEvent(summary: "key(\(press.stroke.key)) released"))
+        }
+        catch { throw recordFailure(error) }
+    }
+
+    // MARK: - Held-Key Flags
+    private func currentFlags(for press: HeldKeyPress, resolved: KeyModifiers?) -> KeyModifiers {
+        if let resolved { return resolved.union(functionPress == nil ? [] : [.function]) }
+        let suppressed = press.initialHeldFlags.subtracting(press.stroke.modifiers)
+        return press.stroke.modifiers.subtracting(press.initialHeldFlags)
+            .union(heldModifierFlags.subtracting(suppressed))
+    }
+
+    // MARK: - Input Cleanup
+    func releaseAllModifiers() {
+        inputSession = UUID()
+        for token in Array(keyPresses.keys) {
+            do { try endKeyPress(token) }
+            catch { _ = recordFailure(error) }
+        }
+        do { try clearActiveOneShotModifiers() }
+        catch { _ = recordFailure(error) }
+        if let token = functionPress {
+            do { try endFunctionPress(token) }
+            catch { _ = recordFailure(error) }
+        }
     }
 
     // MARK: - Text Input
@@ -302,7 +446,7 @@ final class KeyboardService {
             try checkLockScreenInput()
             if isScreenLocked {
                 try eventPoster.postTextToSystemFocus(text)
-                if consumesActiveOneShotModifiers { clearActiveOneShotModifiers() }
+                if consumesActiveOneShotModifiers { try clearActiveOneShotModifiers() }
                 return recordSuccess(.systemKeyEvent(summary: "Input submitted to system focus"))
             }
             let target = try targetResolver.focusedKeyboardTarget()
@@ -312,7 +456,7 @@ final class KeyboardService {
             typingObserver?.didPostText(text)
 
             if consumesActiveOneShotModifiers {
-                clearActiveOneShotModifiers()
+                try clearActiveOneShotModifiers()
             }
 
             return recordSuccess(
@@ -376,18 +520,19 @@ final class KeyboardService {
 
     @discardableResult
     func releaseActiveOneShotModifiers() async throws -> KeyboardDeliveryReceipt {
-        guard !activeOneShotModifiers.isEmpty else {
-            return recordSuccess(.noOperation(summary: "no active one-shot modifiers"))
+        do {
+            try clearActiveOneShotModifiers()
+            return recordSuccess(.modifierState(summary: "one-shot modifiers released"))
         }
-
-        clearActiveOneShotModifiers()
-        return recordSuccess(.modifierState(summary: "one-shot modifiers released"))
+        catch { throw recordFailure(error) }
     }
 
     @discardableResult
     func consumeActiveOneShotModifiers(for action: KeyAction = .none) -> [ModifierKey] {
         let modifiers = activeOneShotModifierOrder
-        clearActiveOneShotModifiers()
+        // Transfer the latch to the synchronous key delivery without releasing it early.
+        activeOneShotModifiers.removeAll()
+        activeOneShotModifierOrder.removeAll()
         guard case .keyStroke(let stroke) = action else { return modifiers }
         // The resolver may remove Shift to force lowercase on a Caps Lock right-click.
         return modifiers.filter { stroke.modifiers.isSuperset(of: $0.modifiers) }
@@ -395,13 +540,20 @@ final class KeyboardService {
 
     // MARK: - Caps Lock
     @discardableResult
-    func toggleCapsLock() -> KeyboardDeliveryReceipt {
-        isCapsLockEnabled.toggle()
-        return recordSuccess(
-            .modifierState(
-                summary: "caps lock \(isCapsLockEnabled ? "enabled" : "disabled")"
+    func toggleCapsLock() throws -> KeyboardDeliveryReceipt {
+        do {
+            try checkLockScreenInput()
+            let enabled = try toggleSystemCapsLock()
+            physicalKeyboard.refresh()
+            let flags = modifierFlags(for: Set(postedModifiers)).union(heldModifierFlags)
+                .subtracting(.capsLock).union(enabled ? .capsLock : [])
+            try eventPoster.postKey(.capsLock, modifiers: flags, keyDown: true)
+            try eventPoster.postKey(.capsLock, modifiers: flags, keyDown: false)
+            return recordSuccess(
+                .systemKeyEvent(summary: "caps lock \(enabled ? "enabled" : "disabled")")
             )
-        )
+        }
+        catch { throw recordFailure(error) }
     }
 
     // MARK: - Keystroke Delivery
@@ -413,10 +565,10 @@ final class KeyboardService {
         let latchedModifiers = activeOneShotModifierOrder
 
         if consumesActiveOneShotModifiers, stroke.key != .capsLock {
-            clearActiveOneShotModifiers()
+            consumeActiveOneShotModifiers()
         }
 
-        return try await press(stroke, latchedModifiers: latchedModifiers)
+        return try press(stroke, latchedModifiers: latchedModifiers)
     }
 
     @discardableResult
@@ -424,19 +576,20 @@ final class KeyboardService {
         _ stroke: KeyStroke,
         latchedModifiers: [ModifierKey],
         modifiersAreResolved: Bool = false
-    ) async throws -> KeyboardDeliveryReceipt {
+    ) throws -> KeyboardDeliveryReceipt {
         if stroke.key == .capsLock {
-            return toggleCapsLock()
+            return try toggleCapsLock()
         }
 
         do {
             try checkLockScreenInput()
-            let hardwareFlags = physicalKeyboard.snapshot.modifierFlags
+            try releaseUnclaimedModifiers(keeping: latchedModifiers)
+            let hardwareFlags = heldModifierFlags
             let modifiers = stroke.modifiers
                 .union(modifierFlags(for: Set(latchedModifiers)))
                 .union(modifiersAreResolved ? [] : hardwareFlags)
             let syntheticModifiers = latchedModifiers.filter {
-                hardwareFlags.intersection($0.modifiers).isEmpty
+                postedModifiers.contains($0) || hardwareFlags.intersection($0.modifiers).isEmpty
             }
 
             if !isScreenLocked { typingObserver?.prepareForInput() }
@@ -461,19 +614,56 @@ final class KeyboardService {
     }
 
     // MARK: - One-Shot Modifiers
-    private var activeOneShotModifierFlags: KeyModifiers {
-        modifierFlags(for: activeOneShotModifiers)
-    }
-
     private func modifierFlags(for modifiers: Set<ModifierKey>) -> KeyModifiers {
         modifiers.reduce([]) { flags, modifier in
             flags.union(modifier.modifiers)
         }
     }
 
-    private func clearActiveOneShotModifiers() {
+    // MARK: - Transferred Modifiers
+    private func releaseUnclaimedModifiers(keeping modifiers: [ModifierKey]) throws {
+        for modifier in postedModifiers
+        where !modifiers.contains(modifier) && !activeOneShotModifiers.contains(modifier) {
+            try postModifierUp(modifier)
+        }
+    }
+
+    // MARK: - Modifier Cleanup
+    private func clearActiveOneShotModifiers() throws {
+        var firstError: (any Error)?
+        for modifier in postedModifiers.reversed() {
+            do { try postModifierUp(modifier) }
+            catch { if firstError == nil { firstError = error } }
+        }
         activeOneShotModifiers.removeAll()
         activeOneShotModifierOrder.removeAll()
+        if let firstError { throw firstError }
+    }
+
+    // MARK: - Modifier Down
+    private func postModifierDown(_ modifier: ModifierKey) throws {
+        guard !postedModifiers.contains(modifier),
+            heldModifierFlags.intersection(modifier.modifiers).isEmpty
+        else { return }
+        try eventPoster.postKey(
+            modifier.key,
+            modifiers: modifierFlags(for: Set(postedModifiers)).union(heldModifierFlags)
+                .union(modifier.modifiers),
+            keyDown: true
+        )
+        postedModifiers.append(modifier)
+    }
+
+    // MARK: - Modifier Up
+    private func postModifierUp(_ modifier: ModifierKey) throws {
+        guard postedModifiers.contains(modifier) else { return }
+        let remaining = Set(postedModifiers).subtracting([modifier])
+        try eventPoster.postKey(
+            modifier.key,
+            modifiers: modifierFlags(for: remaining).union(heldModifierFlags),
+            keyDown: false
+        )
+        postedModifiers.removeAll { $0 == modifier }
     }
 
     // MARK: - Chord Events
@@ -486,18 +676,11 @@ final class KeyboardService {
         var keyIsDown = false
 
         do {
-            var pressedModifiers: Set<ModifierKey> = []
-
             for modifier in latchedModifiers {
-                pressedModifiers.insert(modifier)
-                try eventPoster.postKey(
-                    modifier.key,
-                    modifiers: modifierFlags(for: pressedModifiers).union(
-                        physicalKeyboard.snapshot.modifierFlags
-                    ),
-                    keyDown: true
-                )
-                postedModifiers.append(modifier)
+                try postModifierDown(modifier)
+                if !activeOneShotModifiers.contains(modifier) {
+                    postedModifiers.append(modifier)
+                }
             }
 
             try eventPoster.postKey(
@@ -531,33 +714,11 @@ final class KeyboardService {
     }
 
     private func postModifierUps(_ modifiers: [ModifierKey]) throws {
-        var remainingModifiers = Set(modifiers)
-
-        for modifier in modifiers.reversed() {
-            remainingModifiers.remove(modifier)
-            try eventPoster.postKey(
-                modifier.key,
-                modifiers: modifierFlags(for: remainingModifiers).union(
-                    physicalKeyboard.snapshot.modifierFlags
-                ),
-                keyDown: false
-            )
-        }
+        for modifier in modifiers.reversed() { try postModifierUp(modifier) }
     }
 
     private func postModifierUpsBestEffort(_ modifiers: [ModifierKey]) {
-        var remainingModifiers = Set(modifiers)
-
-        for modifier in modifiers.reversed() {
-            remainingModifiers.remove(modifier)
-            try? eventPoster.postKey(
-                modifier.key,
-                modifiers: modifierFlags(for: remainingModifiers).union(
-                    physicalKeyboard.snapshot.modifierFlags
-                ),
-                keyDown: false
-            )
-        }
+        for modifier in modifiers.reversed() { try? postModifierUp(modifier) }
     }
 
     // MARK: - Receipts

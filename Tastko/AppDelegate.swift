@@ -39,16 +39,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        KeyboardService.shared.releaseAllModifiers()
         PhysicalKeyboardState.shared.stop()
         pointerVisibilityMonitor.stop()
         DistributedNotificationCenter.default().removeObserver(self)
         floatingWindowController.stopLockScreenDisplay()
         TextPredictionService.shared.stop()
-        NSWorkspace.shared.notificationCenter.removeObserver(
-            self,
-            name: NSWorkspace.didActivateApplicationNotification,
-            object: nil
-        )
+        NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
 
     func applicationShouldHandleReopen(
@@ -61,6 +58,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Active Application
     private func startObservingScreenLock() {
+        for name in [
+            NSWorkspace.willSleepNotification, NSWorkspace.sessionDidResignActiveNotification,
+        ] {
+            NSWorkspace.shared.notificationCenter.addObserver(
+                self,
+                selector: #selector(releaseKeyboardInput),
+                name: name,
+                object: nil
+            )
+        }
         let center = DistributedNotificationCenter.default()
         center.addObserver(
             self,
@@ -76,6 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             suspensionBehavior: .deliverImmediately
         )
+    }
+
+    // MARK: - Suspended Input
+    @objc private func releaseKeyboardInput() {
+        KeyboardService.shared.releaseAllModifiers()
     }
 
     @objc private func screenLocked() {

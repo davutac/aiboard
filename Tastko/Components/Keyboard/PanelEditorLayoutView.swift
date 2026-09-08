@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - PanelEditorLayoutView
 struct PanelEditorLayoutView: View {
     @Environment(\.keyboardLanguageService) private var keyboardLanguageService
+    @Environment(\.keyboardService) private var keyboardService
 
     let panel: PanelEditorPanel
 
@@ -41,6 +42,8 @@ struct PanelEditorLayoutView: View {
         .onAppear {
             keyboardLanguageService.refreshSelectedLanguage()
         }
+        .onDisappear { keyboardService.releaseAllModifiers() }
+        .onChange(of: panel.id) { keyboardService.releaseAllModifiers() }
     }
 
     // MARK: - Metrics

@@ -148,19 +148,39 @@ final class PhysicalKeyboardState {
 
     // MARK: - Hardware
     nonisolated static func hardwareSnapshot() -> PhysicalKeyboardSnapshot {
-        var keys = Set(
+        let keys = Set(
             Key.allCases.filter {
                 CGEventSource.keyState(.hidSystemState, key: $0.cgKeyCode)
             }
         )
-        let flags = CGEventSource.flagsState(.hidSystemState)
-        // Globe/Fn is exposed as a flag on keyboards that omit its key-state bit.
+        // Caps Lock is a system latch, not a physical key-down flag. Read the same
+        // IOHID state that SystemCapsLock.toggle verifies; HID event flags can disagree.
+        let capsLockEnabled =
+            SystemCapsLock.currentState()
+            ?? CGEventSource.flagsState(.combinedSessionState).contains(.maskAlphaShift)
+        return hardwareSnapshot(
+            pressedKeys: keys,
+            flags: CGEventSource.flagsState(.hidSystemState),
+            capsLockEnabled: capsLockEnabled
+        )
+    }
+
+    // MARK: - Hardware State Reconciliation
+    nonisolated static func hardwareSnapshot(
+        pressedKeys: Set<Key>,
+        flags: CGEventFlags,
+        capsLockEnabled: Bool? = nil
+    ) -> PhysicalKeyboardSnapshot {
+        var keys = pressedKeys
+        // Fn's keycode bit can remain set while Fn is up, or be absent while Fn is down.
+        // Its modifier flag is authoritative in both cases.
+        keys.remove(.function)
         if flags.contains(.maskSecondaryFn) { keys.insert(.function) }
         let modifiers = Set(ModifierKey.allCases.filter { keys.contains($0.key) })
         return PhysicalKeyboardSnapshot(
             pressedKeys: keys,
             modifiers: modifiers,
-            isCapsLockEnabled: flags.contains(.maskAlphaShift)
+            isCapsLockEnabled: capsLockEnabled ?? flags.contains(.maskAlphaShift)
         )
     }
 

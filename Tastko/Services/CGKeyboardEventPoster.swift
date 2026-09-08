@@ -59,6 +59,22 @@ struct CGKeyboardEventPoster: KeyboardEventPosting {
         modifiers: KeyModifiers,
         keyDown: Bool
     ) throws {
+        try keyEvent(key, modifiers: modifiers, keyDown: keyDown).post(tap: .cghidEventTap)
+    }
+
+    // MARK: - Repeat Delivery
+    func postKeyRepeat(_ key: Key, modifiers: KeyModifiers) throws {
+        try keyEvent(key, modifiers: modifiers, keyDown: true, isRepeat: true)
+            .post(tap: .cghidEventTap)
+    }
+
+    // MARK: - Key Events
+    func keyEvent(
+        _ key: Key,
+        modifiers: KeyModifiers,
+        keyDown: Bool,
+        isRepeat: Bool = false
+    ) throws -> CGEvent {
         guard
             let event = CGEvent(
                 keyboardEventSource: source,
@@ -68,10 +84,13 @@ struct CGKeyboardEventPoster: KeyboardEventPosting {
         else {
             throw KeyboardServiceError.eventCreationFailed
         }
-
+        if key == .capsLock || ModifierKey.allCases.contains(where: { $0.key == key }) {
+            event.type = .flagsChanged
+        }
         event.flags = modifiers.cgEventFlags
+        event.setIntegerValueField(.keyboardEventAutorepeat, value: isRepeat ? 1 : 0)
         event.setIntegerValueField(.eventSourceUserData, value: Self.predictionEventTag)
-        event.post(tap: .cghidEventTap)
+        return event
     }
 
     // MARK: - Events

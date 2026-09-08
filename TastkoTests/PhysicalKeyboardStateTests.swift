@@ -81,6 +81,54 @@ struct PhysicalKeyboardStateTests {
         #expect(state.snapshot.modifiers == [.leftShift, .function])
     }
 
+    // MARK: - Fn Hardware State
+    @Test(arguments: [false, true], [false, true])
+    func fnFlagIsAuthoritativeEvenWhenKeycodeStateDisagrees(keyIsDown: Bool, flagIsDown: Bool) {
+        let snapshot = PhysicalKeyboardState.hardwareSnapshot(
+            pressedKeys: keyIsDown ? [.function, .a] : [.a],
+            flags: flagIsDown ? .maskSecondaryFn : []
+        )
+        #expect(snapshot.modifiers.contains(.function) == flagIsDown)
+        #expect(snapshot.pressedKeys.contains(.function) == flagIsDown)
+        #expect(snapshot.pressedKeys.contains(.a))
+    }
+
+    // MARK: - Caps Lock Hardware State
+    @Test(arguments: [false, true], [false, true])
+    func systemLockOverridesHIDFlag(systemLock: Bool, hidLock: Bool) throws {
+        let state = PhysicalKeyboardState(
+            readHardware: {
+                PhysicalKeyboardState.hardwareSnapshot(
+                    pressedKeys: [.a, .rightShift],
+                    flags: hidLock ? [.maskAlphaShift, .maskSecondaryFn] : [.maskSecondaryFn],
+                    capsLockEnabled: systemLock
+                )
+            },
+            canObserve: { true }
+        )
+        state.refresh()
+        #expect(state.snapshot.isCapsLockEnabled == systemLock)
+        #expect(state.snapshot.modifiers == [.rightShift, .function])
+        #expect(state.snapshot.pressedKeys == [.a, .rightShift, .function])
+
+        let changed = try #require(
+            NSEvent.keyEvent(
+                with: .flagsChanged,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "",
+                charactersIgnoringModifiers: "",
+                isARepeat: false,
+                keyCode: Key.capsLock.rawValue
+            )
+        )
+        state.receive(changed)
+        #expect(state.snapshot.isCapsLockEnabled == systemLock)
+    }
+
     // MARK: - Reconciliation
     @Test func refreshesBothModifierSidesAndRecoversMissedReleases() throws {
         var hardware = PhysicalKeyboardSnapshot(

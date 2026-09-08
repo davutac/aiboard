@@ -73,6 +73,7 @@ final class FloatingWindowController {
 
     func hide() {
         guard !isScreenLocked else { return }
+        KeyboardService.shared.releaseAllModifiers()
         finishToolbarAnimation()
         isHiddenForInactivity = false
         TextPredictionService.shared.stop()
@@ -170,6 +171,7 @@ final class FloatingWindowController {
 
     func minimize() {
         guard !isScreenLocked else { return }
+        KeyboardService.shared.releaseAllModifiers()
         finishToolbarAnimation()
         presentationState = .minimized
         show()

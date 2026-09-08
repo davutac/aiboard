@@ -14,6 +14,9 @@ struct PanelEditorButtonView: View {
     @State private var pressedButton: KeyMouseButton?
     @State private var isHovered = false
     @State private var repeatTask: Task<Void, Never>?
+    @State private var keyPress: UUID?
+    @State private var keyPressMouseButton: KeyMouseButton?
+    @State private var keyPressModifiers: Set<ModifierKey> = []
 
     // MARK: - Body
     var body: some View {
@@ -53,10 +56,10 @@ struct PanelEditorButtonView: View {
             perform(action(for: .right))
         }
         .onDisappear {
-            stopRepeatingAction()
+            handleMouseCancellation()
         }
         .onChange(of: keyboardService.inputSession) {
-            stopRepeatingAction()
+            handleMouseCancellation()
             pressedButton = nil
         }
     }
@@ -79,7 +82,7 @@ struct PanelEditorButtonView: View {
             from: base,
             translator: languageService.keyLabels,
             activeOneShotModifiers: modifiers,
-            physicalModifiers: keyboardService.physicalKeyboard.snapshot.modifiers,
+            physicalModifiers: keyboardService.heldModifiers,
             isCapsLockEnabled: keyboardService.effectiveCapsLockEnabled
         )
     }
@@ -100,7 +103,10 @@ struct PanelEditorButtonView: View {
             return "Shows or hides the system controls and function keys"
         }
         if button.primaryAction.isCapsLock {
-            return "Toggles uppercase typing; right-click a letter to type lowercase"
+            return "Toggles system Caps Lock; right-click a letter to type lowercase"
+        }
+        if modifierKey == .function {
+            return "Click to hold Fn; click again to release"
         }
 
         guard modifierKey != nil else {
@@ -162,7 +168,6 @@ struct PanelEditorButtonView: View {
         soundService.play(.keyPress)
 
         let action = action(for: mouseButton)
-
         if !action.isRepeatable {
             perform(action)
             return
@@ -172,7 +177,7 @@ struct PanelEditorButtonView: View {
     }
 
     private func handleMouseRelease(_ mouseButton: KeyMouseButton) {
-        stopRepeatingAction()
+        handleMouseCancellation()
     }
 
     private func handleMouseCancellation() {
@@ -201,12 +206,16 @@ struct PanelEditorButtonView: View {
         }
 
         if action.isCapsLock {
-            keyboardService.toggleCapsLock()
+            _ = try? keyboardService.toggleCapsLock()
+            return
+        }
+        if action == .modifier(.function) {
+            _ = try? keyboardService.toggleFunctionKey()
             return
         }
 
         if case .modifier(let modifier) = action, button.pressBehavior == .oneShot {
-            keyboardService.toggleOneShotModifier(modifier)
+            _ = try? keyboardService.toggleOneShotModifier(modifier)
             return
         }
 
@@ -214,22 +223,12 @@ struct PanelEditorButtonView: View {
         case .keyStroke(let stroke):
             let latchedModifiers = keyboardService.consumeActiveOneShotModifiers(for: action)
 
-            Task {
-                guard keyboardService.inputSession == inputSession else { return }
-                _ = try? await keyboardService.press(
-                    stroke,
-                    latchedModifiers: latchedModifiers,
-                    modifiersAreResolved: true
-                )
-            }
-        case .text(let text):
-            keyboardService.consumeActiveOneShotModifiers()
-
-            Task {
-                guard keyboardService.inputSession == inputSession else { return }
-                _ = try? await keyboardService.type(text)
-            }
-        case .none, .modifier(_), .cycleKeyboardLanguage, .toggleFunctionToolbar:
+            _ = try? keyboardService.press(
+                stroke,
+                latchedModifiers: latchedModifiers,
+                modifiersAreResolved: true
+            )
+        case .text, .none, .modifier, .cycleKeyboardLanguage, .toggleFunctionToolbar:
             Task {
                 guard keyboardService.inputSession == inputSession else { return }
                 _ = try? await keyboardService.perform(action, behavior: button.pressBehavior)
@@ -240,43 +239,70 @@ struct PanelEditorButtonView: View {
     // MARK: - Key Repeat
     private func startRepeatingAction(_ initialAction: KeyAction, for mouseButton: KeyMouseButton) {
         stopRepeatingAction()
-        let capturedModifiers = keyboardService.activeOneShotModifiers
-        let latchedModifiers = keyboardService.consumeActiveOneShotModifiers(for: initialAction)
         let inputSession = keyboardService.inputSession
-        repeatTask = Task {
-            guard keyboardService.inputSession == inputSession, !Task.isCancelled else { return }
-            await performRepeatingAction(initialAction, latchedModifiers: latchedModifiers)
-            try? await Task.sleep(for: .milliseconds(350))
-            while !Task.isCancelled, keyboardService.inputSession == inputSession {
-                let currentAction = action(for: mouseButton, modifiers: capturedModifiers)
-                let currentLatches = latchedModifiers.filter { modifier in
-                    guard case .keyStroke(let stroke) = currentAction else { return true }
-                    return stroke.modifiers.isSuperset(of: modifier.modifiers)
+        if case .keyStroke(let stroke) = initialAction {
+            keyPressMouseButton = mouseButton
+            keyPressModifiers = keyboardService.activeOneShotModifiers
+            let modifiers = keyboardService.consumeActiveOneShotModifiers(for: initialAction)
+            guard
+                let token = try? keyboardService.beginKeyPress(stroke, latchedModifiers: modifiers)
+            else { return }
+            keyPress = token
+            repeatTask = Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                while !Task.isCancelled, keyboardService.inputSession == inputSession {
+                    do {
+                        try keyboardService.repeatKeyPress(
+                            token,
+                            modifiers: currentKeyPressModifiers
+                        )
+                    }
+                    catch {
+                        stopRepeatingAction()
+                        return
+                    }
+                    try? await Task.sleep(for: .milliseconds(60))
                 }
-                await performRepeatingAction(currentAction, latchedModifiers: currentLatches)
-                try? await Task.sleep(for: .milliseconds(60))
+            }
+        }
+        else if case .text(let text) = initialAction {
+            // Unicode text buttons insert text rather than holding a physical keycode.
+            repeatTask = Task {
+                guard !Task.isCancelled, keyboardService.inputSession == inputSession else {
+                    return
+                }
+                _ = try? await keyboardService.perform(.text(text))
+                try? await Task.sleep(for: .milliseconds(350))
+                while !Task.isCancelled, keyboardService.inputSession == inputSession {
+                    _ = try? await keyboardService.type(text)
+                    try? await Task.sleep(for: .milliseconds(60))
+                }
             }
         }
     }
 
+    // MARK: - Held-Key Modifiers
+    private var currentKeyPressModifiers: KeyModifiers? {
+        guard let mouseButton = keyPressMouseButton,
+            case .keyStroke(let stroke) = action(for: mouseButton, modifiers: keyPressModifiers)
+        else { return nil }
+        return stroke.modifiers
+    }
+
+    // MARK: - Stop Repeat
     private func stopRepeatingAction() {
         repeatTask?.cancel()
         repeatTask = nil
-    }
-
-    private func performRepeatingAction(_ action: KeyAction, latchedModifiers: [ModifierKey]) async
-    {
-        switch action {
-        case .none, .modifier(_), .cycleKeyboardLanguage, .toggleFunctionToolbar:
-            return
-        case .keyStroke(let stroke):
-            _ = try? await keyboardService.press(
-                stroke,
-                latchedModifiers: latchedModifiers,
-                modifiersAreResolved: true
-            )
-        case .text(let text):
-            _ = try? await keyboardService.type(text)
+        if let keyPress {
+            do {
+                try keyboardService.endKeyPress(keyPress, modifiers: currentKeyPressModifiers)
+                self.keyPress = nil
+                keyPressMouseButton = nil
+                keyPressModifiers = []
+            }
+            catch {
+                // Keep the token so a later cleanup can retry the release.
+            }
         }
     }
 }

@@ -248,6 +248,7 @@ final class AlwaysOnTopPanel: NSPanel, NSWindowDelegate {
         }
     }
 
+    // MARK: - Window Style
     private static func styleMask(for configuration: AlwaysOnTopWindowConfiguration)
         -> NSWindow.StyleMask
     {
