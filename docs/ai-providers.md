@@ -48,6 +48,11 @@ Requests are throttled to 500 ms from their start time. Up to five requests run 
 context. A newer usable result cancels older requests, and late older results
 cannot replace it. Each valid newer result appears immediately, even while later
 requests are running. Failed or empty results preserve useful pending requests and any still-valid visible suggestions.
+The last successful completion is cached in memory with its input, language, and
+model selection. Returning to that input after a focus change or keyboard restart
+restores the suggestions without a request. Changing the system prompt clears the
+cache; different model options or input require generation. Nothing is written to disk.
+
 Cancelled requests retain their slot until they exit. Continued typing reuses matching endings and trims the typed prefix,
 keeping valid suggestions visible during refresh. Edits, focus changes, selecting
 text, shortcut modifiers, hiding/minimizing the keyboard, locking, or turning

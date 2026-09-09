@@ -188,6 +188,7 @@ struct AttachedWindowTests {
             floating.sentenceService = previous
         }
         for _ in 0..<8 {
+            service.instructionsDidChange()
             service.start()
             await eventually { service.isGenerating }
             controller.showChild(.keyboardCompanion, configuration: .keyboardCompanion) {

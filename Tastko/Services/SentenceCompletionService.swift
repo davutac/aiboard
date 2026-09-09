@@ -25,6 +25,13 @@ final class SentenceCompletionService {
     @ObservationIgnored private var lastStarted: ContinuousClock.Instant?
     @ObservationIgnored private var requestedContext: PredictionContext?
 
+    private struct CachedCompletion {
+        let input: PredictionInput
+        let selection: AIProviderSelection
+        let suggestions: [String]
+    }
+    @ObservationIgnored private var cachedCompletion: CachedCompletion?
+
     // MARK: - Initialization
     init(
         minimumInterval: Duration? = nil,
@@ -58,6 +65,7 @@ final class SentenceCompletionService {
 
     // MARK: - Instruction Changes
     func instructionsDidChange() {
+        cachedCompletion = nil
         cancel()
         lastContext = nil
         guard running else { return }
@@ -100,6 +108,17 @@ final class SentenceCompletionService {
             self.displayedContext = suggestions.isEmpty ? nil : next
         }
         error = nil
+        if let cachedCompletion,
+            cachedCompletion.input.context == next.input.context,
+            cachedCompletion.input.language == next.input.language,
+            cachedCompletion.selection == selected
+        {
+            cancel()
+            suggestions = cachedCompletion.suggestions
+            displayedContext = next
+            requestedContext = next
+            return
+        }
         schedule()
     }
 
@@ -178,6 +197,11 @@ final class SentenceCompletionService {
                     }
                     return
                 }
+                self.cachedCompletion = CachedCompletion(
+                    input: current.input,
+                    selection: selected,
+                    suggestions: Self.completions(from: output, input: current.input.context)
+                )
                 self.cancelOlderRequests(than: id)
                 self.suggestions = candidates
                 self.displayedContext = latest

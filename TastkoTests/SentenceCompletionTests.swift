@@ -233,6 +233,49 @@ struct SentenceCompletionTests {
         #expect(fixture.requests.count == 1)
     }
 
+    // MARK: - Last Completion Cache
+    @Test func unchangedInputReusesCompletionAfterRestartAndFocusChange() async {
+        let fixture = SentenceFixture()
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { !fixture.service.isGenerating }
+        fixture.service.stop()
+        fixture.current = predictionContext("I want", elementID: 2)
+        fixture.service.start()
+        await eventually { fixture.service.suggestions == [" to rest."] }
+        #expect(!fixture.service.isGenerating)
+        #expect(fixture.requests.count == 1)
+        #expect(fixture.service.accept(" to rest."))
+    }
+
+    @Test func changedInstructionsInvalidateCachedCompletion() async {
+        let fixture = SentenceFixture()
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { !fixture.service.isGenerating }
+        fixture.service.instructionsDidChange()
+        await eventually { fixture.requests.count == 2 }
+        fixture.finish(1, #"["I want to walk."]"#)
+        await eventually { fixture.service.suggestions == [" to walk."] }
+    }
+
+    @Test func changedModelOptionsDoNotReuseCachedCompletion() async {
+        let fixture = SentenceFixture()
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { !fixture.service.isGenerating }
+        fixture.selected = AIProviderSelection(provider: .apple, optionID: "light")
+        await eventually { fixture.requests.count == 2 }
+        fixture.finish(1, #"["I want to walk."]"#)
+        await eventually { !fixture.service.isGenerating }
+    }
+
     // MARK: - Target Validation
     @Test func insertionRevalidatesFocusAndDoesNotDeleteTypedText() {
         let fixture = PredictionFixture()
