@@ -10,7 +10,6 @@ final class AIProviderService {
     private(set) var selections: [AIProviderID: AIProviderSelection] = [:]
     private(set) var statuses: [AIProviderID: AIProviderStatus] = [:]
     private(set) var storageError: String?
-    @ObservationIgnored private let resolver: AIExecutableResolver
     @ObservationIgnored private let adapters: [AIProviderID: any AIProviderAdapter]
     private struct Refresh {
         let id: UUID
@@ -23,25 +22,10 @@ final class AIProviderService {
     // MARK: - Initialization
     init(
         persistence: AppPersistence,
-        resolver: AIExecutableResolver = AIExecutableResolver(),
-        adapters: [AIProviderID: any AIProviderAdapter]? = nil,
-        cliProvidersEnabled: Bool = false
+        adapters: [AIProviderID: any AIProviderAdapter]? = nil
     ) {
         self.persistence = persistence
-        self.resolver = resolver
-        if let adapters {
-            self.adapters = adapters
-        }
-        else if cliProvidersEnabled {
-            self.adapters = [
-                .codex: CodexAIProvider(), .claude: ClaudeAIProvider(),
-                .opencode: OpenCodeAIProvider(owner: AIOpenCodeServerOwner()),
-                .apple: AppleFoundationModelProvider(),
-            ]
-        }
-        else {
-            self.adapters = [.apple: AppleFoundationModelProvider()]
-        }
+        self.adapters = adapters ?? [.apple: AppleFoundationModelProvider()]
         for provider in AIProviderID.allCases {
             selections[provider] = AIProviderSelection(provider: provider)
             statuses[provider] = AIProviderStatus()
@@ -73,9 +57,7 @@ final class AIProviderService {
             {
                 configuration.modelID = AppleFoundationModelProvider.modelID
             }
-            if let saved = settings.activeProvider.flatMap(AIProviderID.init(rawValue:)),
-                adapters[saved] == nil
-            {
+            if let saved = settings.activeProvider, saved != AIProviderID.apple.rawValue {
                 settings.activeProvider =
                     adapters[.apple] == nil ? nil : AIProviderID.apple.rawValue
             }
@@ -87,7 +69,6 @@ final class AIProviderService {
                 }
                 selections[provider] = AIProviderSelection(
                     provider: provider,
-                    executableOverride: configuration.executableOverride,
                     modelID: configuration.modelID,
                     optionID: configuration.optionID
                 )
@@ -148,9 +129,6 @@ final class AIProviderService {
     func updateSelection(_ selection: AIProviderSelection) {
         let old = selections[selection.provider]
         var selection = selection
-        selection.executableOverride = selection.executableOverride.trimmingCharacters(
-            in: .whitespacesAndNewlines
-        )
         if old?.modelID != selection.modelID {
             let choices =
                 statuses[selection.provider]?.models.first(where: { $0.id == selection.modelID })?
@@ -168,20 +146,11 @@ final class AIProviderService {
                 else {
                     throw AIProviderError.persistence("Provider configuration missing.")
                 }
-                configuration.executableOverride = selection.executableOverride
                 configuration.modelID = selection.modelID
                 configuration.optionID = selection.optionID
             })
         else { return }
         selections[selection.provider] = selection
-        if old?.executableOverride != selection.executableOverride {
-            refreshes[selection.provider]?.task.cancel()
-            refreshes[selection.provider] = nil
-            statuses[selection.provider]?.authentication = .unknown
-            statuses[selection.provider]?.accountDescription = nil
-            statuses[selection.provider]?.isCached = true
-            Task { await refreshProvider(selection.provider) }
-        }
     }
 
     // MARK: - Refresh All Providers
@@ -213,7 +182,7 @@ final class AIProviderService {
 
     // MARK: - Refresh Provider
     func refreshProvider(_ provider: AIProviderID) async {
-        guard !stopped, persistence.container != nil, let selection = selections[provider],
+        guard !stopped, persistence.container != nil, selections[provider] != nil,
             let adapter = adapters[provider]
         else { return }
         if let existing = refreshes[provider] {
@@ -221,17 +190,12 @@ final class AIProviderService {
             return
         }
         let refreshID = UUID()
-        let task = Task { [weak self, resolver] in
+        let task = Task { [weak self] in
             guard let self else { return }
             statuses[provider]?.isRefreshing = true
             statuses[provider]?.error = nil
             do {
-                let (executable, environment) = try await resolver.resolve(selection)
-                statuses[provider]?.executable = provider.usesCLI ? executable : nil
-                let discovery = try await adapter.discover(
-                    executable: executable,
-                    environment: environment
-                )
+                let discovery = try await adapter.discover()
                 try Task.checkCancellation()
                 let now = Date()
                 var modelIDs: Set<String> = []
@@ -240,8 +204,6 @@ final class AIProviderService {
                 statuses[provider] = AIProviderStatus(
                     models: models,
                     version: discovery.version,
-                    executable: provider.usesCLI ? executable : nil,
-                    authentication: discovery.authentication,
                     source: discovery.source,
                     refreshedAt: now,
                     accountDescription: discovery.accountDescription
@@ -259,17 +221,12 @@ final class AIProviderService {
                 statuses[provider]?.isRefreshing = false
                 let hasModels = !(statuses[provider]?.models.isEmpty ?? true)
                 statuses[provider]?.isCached = hasModels
-                statuses[provider]?.authentication = .unknown
                 statuses[provider]?.accountDescription = nil
                 statuses[provider]?.error = error.localizedDescription
-                if case AIProviderError.executableNotFound = error {
-                    statuses[provider]?.executable = nil
-                }
             }
         }
         refreshes[provider] = Refresh(id: refreshID, task: task)
         await task.value
-        // A cancelled refresh may have been replaced by an executable-path change.
         if refreshes[provider]?.id == refreshID { refreshes[provider] = nil }
     }
 
@@ -320,17 +277,12 @@ final class AIProviderService {
         else {
             throw AIProviderError.unavailableSelection
         }
-        if statuses[provider]?.authentication == .signedOut { throw AIProviderError.authentication }
-        let resolver = resolver
         let task = Task.detached {
             try await withAIDeadline(seconds: request.timeout) {
-                let (executable, environment) = try await resolver.resolve(selection)
                 let text = try await adapter.generate(
                     request: request,
                     selection: selection,
-                    model: model,
-                    executable: executable,
-                    environment: environment
+                    model: model
                 )
                 return AIGenerationResult(text: text, selection: selection)
             }

@@ -13,13 +13,12 @@ import Testing
         let context = try #require(persistence.container?.mainContext)
         for provider in AIProviderID.allCases {
             let configuration = AIProviderConfiguration(providerID: provider.rawValue)
-            configuration.executableOverride = "/bin/echo"
+            configuration.modelID = "fixture"
             context.insert(configuration)
         }
         try context.save()
         let service = AIProviderService(
             persistence: persistence,
-            resolver: AIExecutableResolver(environment: [:]),
             adapters: Dictionary(uniqueKeysWithValues: AIProviderID.allCases.map { ($0, adapter) })
         )
         service.start()
@@ -30,18 +29,18 @@ import Testing
     @Test func failedRefreshKeepsCatalogAndSavedMissingModel() async throws {
         let adapter = AIFixtureAdapter()
         let service = try fixture(adapter)
-        await service.refreshProvider(.codex)
-        #expect(service.statuses[.codex]?.models.count == 2)
-        #expect(service.selections[.codex]?.modelID == "fixture")
-        var selection = try #require(service.selections[.codex])
+        await service.refreshProvider(.apple)
+        #expect(service.statuses[.apple]?.models.count == 2)
+        #expect(service.selections[.apple]?.modelID == "fixture")
+        var selection = try #require(service.selections[.apple])
         selection.modelID = "removed-model"
         service.updateSelection(selection)
         await adapter.configure(fail: true)
-        await service.refreshProvider(.codex)
-        #expect(service.statuses[.codex]?.models.count == 2)
-        #expect(service.statuses[.codex]?.isCached == true)
-        #expect(service.selections[.codex]?.modelID == "removed-model")
-        service.selectProvider(.codex)
+        await service.refreshProvider(.apple)
+        #expect(service.statuses[.apple]?.models.count == 2)
+        #expect(service.statuses[.apple]?.isCached == true)
+        #expect(service.selections[.apple]?.modelID == "removed-model")
+        service.selectProvider(.apple)
         await #expect(throws: AIProviderError.unavailableSelection) {
             try await service.generate(AIGenerationRequest(prompt: "test"))
         }
@@ -49,8 +48,7 @@ import Testing
         #expect(try context.fetchCount(FetchDescriptor<AIModelCatalogCache>()) == 1)
         let reopened = AIProviderService(persistence: service.persistence)
         reopened.start()
-        #expect(reopened.statuses[.codex]?.isCached == true)
-        #expect(reopened.statuses[.codex]?.authentication == .unknown)
+        #expect(reopened.statuses[.apple]?.isCached == true)
     }
 
     // MARK: - Settings Refresh Lifecycle
@@ -70,21 +68,18 @@ import Testing
         try await Task.sleep(for: .milliseconds(100))
         #expect(await adapter.discoveryCount == count)
         #expect(service.activeProvider == nil)
-        #expect(service.statuses.values.allSatisfy { $0.authentication == .authenticated })
         await service.shutdown()
     }
 
     // MARK: - Native Provider Routing
-    @Test func nativeProviderSkipsExecutableResolution() async throws {
+    @Test func nativeProviderGeneratesText() async throws {
         let adapter = AIFixtureAdapter()
         let service = try fixture(adapter)
         var selection = try #require(service.selections[.apple])
-        selection.executableOverride = "/does/not/exist"
         selection.modelID = "fixture"
         service.updateSelection(selection)
         await service.refreshProvider(.apple)
         #expect(service.statuses[.apple]?.error == nil)
-        #expect(service.statuses[.apple]?.executable == nil)
         service.selectProvider(.apple)
         let result = try await service.generate(AIGenerationRequest(prompt: "test"))
         #expect(result.selection.provider == .apple)
@@ -93,23 +88,22 @@ import Testing
     }
 
     // MARK: - Independent Selection
-    @Test func activationAndModelChangesPreserveOtherProviders() async throws {
+    @Test func activationAndModelChangesPreserveOptions() async throws {
         let service = try fixture(AIFixtureAdapter())
         await service.refreshProviders()
         await #expect(throws: AIProviderError.noActiveProvider) {
             try await service.generate(AIGenerationRequest(prompt: "test"))
         }
-        var selection = try #require(service.selections[.codex])
+        var selection = try #require(service.selections[.apple])
         selection.optionID = "low"
         service.updateSelection(selection)
-        service.selectProvider(.codex)
-        service.selectProvider(.claude)
-        #expect(service.activeProvider == .claude)
-        #expect(service.selections[.codex]?.optionID == "low")
+        service.selectProvider(.apple)
+        #expect(service.activeProvider == .apple)
+        #expect(service.selections[.apple]?.optionID == "low")
         selection.modelID = "no-options"
         service.updateSelection(selection)
-        #expect(service.selections[.codex]?.optionID == nil)
-        #expect(service.selections[.claude]?.modelID == "fixture")
+        #expect(service.selections[.apple]?.optionID == nil)
+        #expect(service.selections[.apple]?.modelID == "no-options")
         service.selectProvider(nil)
         #expect(service.activeProvider == nil)
     }
@@ -120,13 +114,13 @@ import Testing
         await adapter.configure(delay: true)
         let service = try fixture(adapter)
         await service.refreshProviders()
-        service.selectProvider(.codex)
+        service.selectProvider(.apple)
         let task = Task { try await service.generate(AIGenerationRequest(prompt: "test")) }
         try await Task.sleep(for: .milliseconds(50))
-        service.selectProvider(.claude)
+        service.selectProvider(nil)
         let result = try await task.value
-        #expect(result.selection.provider == .codex)
+        #expect(result.selection.provider == .apple)
         #expect(result.text == " output ")
-        #expect(service.activeProvider == .claude)
+        #expect(service.activeProvider == nil)
     }
 }

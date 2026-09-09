@@ -26,15 +26,14 @@ actor AIFixtureAdapter: AIProviderAdapter {
     }
 
     // MARK: - Discover
-    func discover(executable: String, environment: [String: String]) async throws
+    func discover() async throws
         -> AIProviderDiscovery
     {
         discoveryCount += 1
-        if fail { throw AIProviderError.process("Fixture failure") }
+        if fail { throw AIProviderError.generation("Fixture failure") }
         return AIProviderDiscovery(
             models: models,
             version: "1.0.0",
-            authentication: .authenticated,
             source: "Fixture"
         )
     }
@@ -43,9 +42,7 @@ actor AIFixtureAdapter: AIProviderAdapter {
     func generate(
         request: AIGenerationRequest,
         selection: AIProviderSelection,
-        model: AIModelDescriptor,
-        executable: String,
-        environment: [String: String]
+        model: AIModelDescriptor
     ) async throws -> String {
         if delay { try await Task.sleep(for: .milliseconds(200)) }
         return " output "

@@ -171,7 +171,7 @@ struct AttachedWindowTests {
         let service = SentenceCompletionService(
             minimumInterval: .zero,
             context: { predictionContext("I want") },
-            selection: { AIProviderSelection(provider: .codex) },
+            selection: { AIProviderSelection(provider: .apple) },
             generate: { _ in
                 try await Task.sleep(for: .milliseconds(80))
                 return

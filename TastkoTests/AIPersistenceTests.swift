@@ -8,18 +8,17 @@ import Testing
 @MainActor struct AIPersistenceTests {
     // MARK: - Seed and Reopen
     @Test func reopensVersionedStoreWithoutDuplicateSettings() throws {
-        let directory = try AIWorkspace.create()
+        let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appending(path: "Tastko.store")
         do {
             let service = AIProviderService(
-                persistence: AppPersistence(storeURL: url),
-                cliProvidersEnabled: true
+                persistence: AppPersistence(storeURL: url)
             )
             service.start()
             service.start()
             #expect(service.activeProvider == nil)
-            service.selectProvider(.claude)
+            service.selectProvider(.apple)
             for provider in AIProviderID.allCases {
                 service.updateSelection(
                     AIProviderSelection(provider: provider, modelID: "saved-\(provider.rawValue)")
@@ -33,11 +32,10 @@ import Testing
             )
         }
         let reopened = AIProviderService(
-            persistence: AppPersistence(storeURL: url),
-            cliProvidersEnabled: true
+            persistence: AppPersistence(storeURL: url)
         )
         reopened.start()
-        #expect(reopened.activeProvider == .claude)
+        #expect(reopened.activeProvider == .apple)
         for provider in AIProviderID.allCases {
             #expect(reopened.selections[provider]?.modelID == "saved-\(provider.rawValue)")
         }
@@ -45,9 +43,10 @@ import Testing
         #expect(AppMigrationPlan.stages.isEmpty)
     }
 
-    // MARK: - Existing V1 Store
-    @Test func addsAppleToExistingStoreAndPersistsItsSelection() throws {
-        let directory = try AIWorkspace.create()
+    // MARK: - Legacy Provider Migration
+    @Test(arguments: ["codex", "claude", "opencode", nil])
+    func migratesLegacySelectionAndPreservesOff(_ active: String?) throws {
+        let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appending(path: "Tastko.store")
         do {
@@ -55,63 +54,28 @@ import Testing
             persistence.open()
             let context = try #require(persistence.container?.mainContext)
             let settings = AISettings()
-            settings.activeProvider = AIProviderID.codex.rawValue
+            settings.activeProvider = active
             context.insert(settings)
-            for provider in [AIProviderID.codex, .claude, .opencode] {
-                let configuration = AIProviderConfiguration(providerID: provider.rawValue)
-                configuration.modelID = "saved-\(provider.rawValue)"
-                context.insert(configuration)
-            }
+            let legacy = AIProviderConfiguration(providerID: "codex")
+            legacy.executableOverride = "/legacy/path"
+            legacy.modelID = "legacy-model"
+            context.insert(legacy)
             try context.save()
         }
-        do {
-            let service = AIProviderService(
-                persistence: AppPersistence(storeURL: url),
-                cliProvidersEnabled: true
-            )
-            service.start()
-            #expect(service.activeProvider == .codex)
-            #expect(service.selections[.codex]?.modelID == "saved-codex")
-            service.selectProvider(.apple)
-            service.updateSelection(
-                AIProviderSelection(provider: .apple, modelID: "system-default")
-            )
-        }
-        let reopened = AIProviderService(
-            persistence: AppPersistence(storeURL: url),
-            cliProvidersEnabled: true
-        )
-        reopened.start()
-        #expect(reopened.activeProvider == .apple)
-        #expect(reopened.selections[.apple]?.modelID == "system-default")
-        #expect(reopened.selections[.codex]?.modelID == "saved-codex")
-        let context = try #require(reopened.persistence.container?.mainContext)
-        #expect(try context.fetchCount(FetchDescriptor<AIProviderConfiguration>()) == 4)
-    }
-
-    // MARK: - Disabled CLI Providers
-    @Test func migratesActiveCLIToAppleWhilePreservingConfiguration() async throws {
-        let persistence = AppPersistence(inMemory: true)
-        let legacy = AIProviderService(persistence: persistence, cliProvidersEnabled: true)
-        legacy.start()
-        legacy.selectProvider(.opencode)
-        legacy.updateSelection(AIProviderSelection(provider: .opencode, modelID: "saved-model"))
-        let service = AIProviderService(persistence: persistence)
+        let service = AIProviderService(persistence: AppPersistence(storeURL: url))
         service.start()
         #expect(service.availableProviders == [.apple])
-        #expect(service.activeProvider == .apple)
-        #expect(service.selections[.opencode]?.modelID == "saved-model")
-        service.selectProvider(.codex)
-        #expect(service.activeProvider == .apple)
-        await service.refreshProvider(.opencode)
-        #expect(service.statuses[.opencode]?.executable == nil)
-        let restored = AIProviderService(persistence: persistence, cliProvidersEnabled: true)
-        restored.start()
-        #expect(restored.activeProvider == .apple)
-        #expect(restored.selections[.opencode]?.modelID == "saved-model")
-        service.selectProvider(nil)
+        #expect(service.activeProvider == (active == nil ? nil : .apple))
+        #expect(service.selections[.apple]?.modelID == "system-default")
+        let context = try #require(service.persistence.container?.mainContext)
+        let legacy = try #require(
+            context.fetch(FetchDescriptor<AIProviderConfiguration>()).first {
+                $0.providerID == "codex"
+            }
+        )
+        #expect(legacy.modelID == "legacy-model")
         service.start()
-        #expect(service.activeProvider == nil)
+        #expect(service.activeProvider == (active == nil ? nil : .apple))
     }
 
     // MARK: - Previously Cleared Apple Selection
@@ -134,7 +98,7 @@ import Testing
 
     // MARK: - Non-Destructive Failure
     @Test func invalidStoreIsPreservedOnOpenAndRetry() throws {
-        let directory = try AIWorkspace.create()
+        let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appending(path: "Tastko.store")
         let original = Data("Do not replace this store".utf8)
@@ -157,4 +121,11 @@ import Testing
         #expect(debug.lastPathComponent == "Tastko.store")
         #expect(release.lastPathComponent == "Tastko.store")
     }
+    // MARK: - Temporary Store
+    private func temporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+
 }

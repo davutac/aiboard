@@ -23,10 +23,7 @@ struct SentenceCompletionTests {
             sentenceCompletions: true,
             systemInstructions: custom
         )
-        let cliPrompt = AITextOutput.prompt(request)
-        #expect(cliPrompt.contains(custom))
-        #expect(!cliPrompt.contains(SentenceCompletionPrompt.instructions))
-        #expect(cliPrompt.contains("sample context"))
+        #expect(request.systemInstructions == custom)
     }
 
     // MARK: - Word Hints

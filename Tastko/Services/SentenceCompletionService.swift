@@ -128,7 +128,7 @@ final class SentenceCompletionService {
             Self.canComplete(next), next != requestedContext
         else { return }
         let interval =
-            minimumInterval ?? (selected.provider == .apple ? .milliseconds(500) : .seconds(2))
+            minimumInterval ?? .milliseconds(500)
         let deadline = lastStarted.map { $0.advanced(by: interval) } ?? .now
         let token = revision
         scheduledRequest = Task { [weak self] in

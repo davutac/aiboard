@@ -62,7 +62,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
     }
 
     // MARK: - Discovery
-    func discover(executable _: String, environment _: [String: String]) async throws
+    func discover() async throws
         -> AIProviderDiscovery
     {
         try Task.checkCancellation()
@@ -70,7 +70,6 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
         return AIProviderDiscovery(
             models: [Self.descriptor(capabilities: systemModel.capabilities)],
             version: ProcessInfo.processInfo.operatingSystemVersionString,
-            authentication: .notRequired,
             source: "macOS Foundation Models",
             accountDescription: "Available on this Mac"
         )
@@ -106,9 +105,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
     @concurrent func generate(
         request: AIGenerationRequest,
         selection: AIProviderSelection,
-        model _: AIModelDescriptor,
-        executable _: String,
-        environment _: [String: String]
+        model _: AIModelDescriptor
     ) async throws -> String {
         try Task.checkCancellation()
         try Self.checkAvailability(systemModel.availability)

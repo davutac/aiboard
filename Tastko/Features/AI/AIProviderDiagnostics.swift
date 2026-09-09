@@ -31,7 +31,7 @@
                 await service.refreshProvider(provider)
                 let status = service.statuses[provider] ?? AIProviderStatus()
                 print(
-                    "\(provider.rawValue): version=\(status.version ?? "unknown") auth=\(status.authentication.rawValue) models=\(status.models.count)"
+                    "\(provider.rawValue): version=\(status.version ?? "unknown") models=\(status.models.count)"
                 )
                 for model in status.models {
                     print(
@@ -44,12 +44,6 @@
                     continue
                 }
                 guard arguments.contains("--generate") else { continue }
-                guard
-                    status.authentication == .authenticated || status.authentication == .notRequired
-                else {
-                    print("  Generation skipped: authentication not verified.")
-                    continue
-                }
                 service.selectProvider(provider)
                 if let modelArgument, var selection = service.selections[provider] {
                     selection.modelID = modelArgument
