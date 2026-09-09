@@ -34,9 +34,8 @@ Native timings were remeasured after adopting the candidate API; context and AI 
 ## Sentence suggestions
 
 Run `bash script/benchmark_sentences.sh` to measure the actual sentence provider
-with six fixed English/German prompts. It prints timings, generated text, and the
-number of usable single completions. A usable result passes prefix and suffix
-format checks; this is not a grammar or semantic quality score.
+with ten fixed English/German prompts. It prints timings, generated text, and the
+number of completions passing prefix and suffix format checks; this is not a grammar or semantic quality score.
 
 Measured locally on September 9, 2026 with Xcode 27 beta 6 and optimized binaries,
 using three rounds of the same six prompts per implementation:
@@ -65,4 +64,21 @@ produced suffix-only responses in local experiments that validation rejected.
 Apple recommends at least a one-second lead time for
 [`prewarm(promptPrefix:)`](https://developer.apple.com/documentation/foundationmodels/languagemodelsession/prewarm(promptprefix:)).
 Calling it immediately before generation would not provide that window. This
-change keeps the existing scheduling, cancellation, and model-option behavior.
+single-suggestion change preserved scheduling, cancellation, and model options.
+
+The subsequent [latency investigation](sentence-latency-experiments.md) retained
+three changes, measured separately:
+
+| Change | Measurement | Before → after |
+| --- | --- | --- |
+| Cache instruction/schema token counts | Median provider generation, 30 requests per version | 883.3 → 832.6 ms |
+| Trim the default prompt | Median provider generation, 30 requests per version | 839.7 → 804.2 ms |
+| Process one sentence request at a time | Median wait after typing, 12 replays per policy | 694.9 → 285.7 ms |
+
+These measurements cover different stages and runs; the improvements are not
+additive. Shorter output formats, schema omission, and more aggressive prompt
+rewrites did not preserve quality reliably.
+
+Run `bash script/benchmark_sentence_typing.sh --rounds 1` for a typing replay
+smoke test. It includes the real sentence scheduler and model, but excludes
+Accessibility capture, word prediction, and UI rendering.

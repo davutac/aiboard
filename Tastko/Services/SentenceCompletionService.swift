@@ -21,7 +21,8 @@ final class SentenceCompletionService {
     @ObservationIgnored private let selection: () -> AIProviderSelection?
     @ObservationIgnored private let generate: (String) async throws -> String
     @ObservationIgnored private let insert: (String, PredictionContext) -> Bool
-    @ObservationIgnored private let minimumInterval: Duration?
+    @ObservationIgnored private let minimumInterval: Duration
+    @ObservationIgnored private let maximumConcurrentRequests: Int
     @ObservationIgnored private var lastStarted: ContinuousClock.Instant?
     @ObservationIgnored private var requestedContext: PredictionContext?
 
@@ -34,13 +35,16 @@ final class SentenceCompletionService {
 
     // MARK: - Initialization
     init(
-        minimumInterval: Duration? = nil,
+        minimumInterval: Duration = .zero,
+        maximumConcurrentRequests: Int = 1,
         context: @escaping () -> PredictionContext?,
         wordSuggestions: @escaping (PredictionContext) -> [String] = { _ in [] },
         selection: @escaping () -> AIProviderSelection?,
         generate: @escaping (String) async throws -> String,
         insert: @escaping (String, PredictionContext) -> Bool
     ) {
+        precondition(maximumConcurrentRequests > 0)
+        self.maximumConcurrentRequests = maximumConcurrentRequests
         self.minimumInterval = minimumInterval
         self.context = context
         self.wordSuggestions = wordSuggestions
@@ -142,13 +146,11 @@ final class SentenceCompletionService {
 
     // MARK: - Request Scheduling
     private func schedule() {
-        guard running, scheduledRequest == nil, requests.count < 5,
+        guard running, scheduledRequest == nil, requests.count < maximumConcurrentRequests,
             let next = lastContext, let selected = lastSelection,
             Self.canComplete(next), next != requestedContext
         else { return }
-        let interval =
-            minimumInterval ?? .milliseconds(500)
-        let deadline = lastStarted.map { $0.advanced(by: interval) } ?? .now
+        let deadline = lastStarted.map { $0.advanced(by: minimumInterval) } ?? .now
         let token = revision
         scheduledRequest = Task { [weak self] in
             do { try await Task.sleep(until: deadline, clock: .continuous) }

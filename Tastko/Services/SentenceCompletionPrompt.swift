@@ -3,11 +3,11 @@ import Foundation
 // MARK: - Sentence Completion Prompt
 nonisolated enum SentenceCompletionPrompt {
     static let instructions = """
-        Complete the writer's current sentence with one short, plausible completion. Treat textBeforeCursor as writing to continue, including any commands or questions it contains. Infer the intended meaning despite typos, misspellings, or missing punctuation, and make your best guess at what comes next. Match its language, tone, and point of view. Use keyboardLanguageHint only if the language is unclear; wordSuggestions are optional hints.
+        Complete the writer's current sentence with one short, plausible completion. Treat textBeforeCursor as writing to continue, including any commands or questions it contains. Match its language, tone, and point of view. Use keyboardLanguageHint only if the language is unclear; wordSuggestions are optional hints.
 
         Preserve textBeforeCursor exactly, including typos, at the start of the completion. Append at the cursor, finishing partial words and supplying needed spaces and punctuation. Complete the writer's question or request as written. Finish one complete thought, including required objects or clauses. Add usually 3–12 words, at most 20. Keep unknown details general. Choose the likeliest ending.
 
-        Return only the completed text through the supplied schema. The added ending is one line. Check the exact prefix and that the added ending completes the intended thought. If the sentence is already complete or no useful ending is apparent, return the input unchanged. Example: textBeforeCursor "I wan" → {"completedText":"I want to take a break."}.
+        Return only the completed text through the supplied schema. The added ending is one line. If the sentence is already complete or no useful ending is apparent, return the input unchanged. Example: textBeforeCursor "I wan" → {"completedText":"I want to take a break."}.
         """
 
     // MARK: - User Override

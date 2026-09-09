@@ -10,9 +10,15 @@ xcrun swiftc -O -parse-as-library -target "$(uname -m)-apple-macos27.0" \
     "$ROOT_DIR/Tastko/Models/PredictionInput.swift" \
     "$ROOT_DIR/Tastko/Features/AI/AIModels.swift" \
     "$ROOT_DIR/Tastko/Features/AI/AppleCompletionBudget.swift" \
+    "$ROOT_DIR/Tastko/Features/AI/AppleCompletionTokenCache.swift" \
     "$ROOT_DIR/Tastko/Features/AI/AppleFoundationModelProvider.swift" \
     "$ROOT_DIR/Tastko/Services/SentenceCompletionPrompt.swift" \
+    "$ROOT_DIR/script/SentenceBenchmarkSupport.swift" \
+    "$ROOT_DIR/script/SentenceBenchmarkSamples.swift" \
+    "$ROOT_DIR/script/benchmark_sentence_parallel.swift" \
     "$ROOT_DIR/script/benchmark_sentences.swift" \
     -o "$BENCHMARK_DIR/sentence-benchmark"
 
-"$BENCHMARK_DIR/sentence-benchmark"
+if [[ "${1:-}" != --build-only ]]; then
+    "$BENCHMARK_DIR/sentence-benchmark" "$@"
+fi

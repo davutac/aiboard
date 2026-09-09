@@ -23,6 +23,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
     static let modelID = "system-default"
     static let modelName = "System Model"
     private let systemModel = SystemLanguageModel.default
+    private let tokenCache = AppleCompletionTokenCache()
 
     // MARK: - Availability
     static func checkAvailability(_ availability: SystemLanguageModel.Availability) throws {
@@ -118,14 +119,19 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             : "You are a helpful assistant. Respond to the user and follow their requested output format."
         var responseTokens: Int?
         if request.sentenceCompletions {
-            let budget = AppleCompletionBudget(
-                instructionTokens: try await systemModel.tokenCount(
+            let counts = try await tokenCache.counts(instructions: instructions) { [systemModel] in
+                async let instructionTokens = systemModel.tokenCount(
                     for: Instructions(instructions)
-                ),
-                promptTokens: try await systemModel.tokenCount(for: Prompt(request.prompt)),
-                schemaTokens: try await systemModel.tokenCount(
+                )
+                async let schemaTokens = systemModel.tokenCount(
                     for: AppleSentenceCompletion.generationSchema
-                ),
+                )
+                return try await .init(instructions: instructionTokens, schema: schemaTokens)
+            }
+            let budget = AppleCompletionBudget(
+                instructionTokens: counts.instructions,
+                promptTokens: try await systemModel.tokenCount(for: Prompt(request.prompt)),
+                schemaTokens: counts.schema,
                 contextSize: systemModel.contextSize
             )
             try budget.validate()

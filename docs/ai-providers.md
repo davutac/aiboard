@@ -18,7 +18,10 @@ Changes save automatically in the app's preferences and cancel pending completio
 Use **Use default as starting point** to edit a copy, or **Reset to default** to clear
 the override. Response schemas and exact-prefix insertion checks remain enforced.
 
-Apple counts instruction, input, and response-schema tokens before generation.
+Apple counts input tokens for every request and reuses the instruction and
+response-schema token counts while instructions remain unchanged. Concurrent
+requests share that counting work; failures can be retried. This cache contains
+no typed input or generated suggestions.
 Instructions are limited to the smaller of 1,024 tokens or one quarter of the
 model's context size. The combined budget reserves output space for one copy
 of the input plus its ending, and 256 tokens of headroom. Oversized requests
@@ -32,10 +35,11 @@ sampled when generation starts. These are optional hints; generation never waits
 for word predictions, and later word updates do not trigger another request.
 Apple receives the instructions through `LanguageModelSession` and returns a
 native `@Generable` object with one `completedText` string. Only one sentence
-suggestion is generated and displayed. The prompt prioritizes exact prefix
-preservation, the language of the writing, and a concise, likely ending
-without replying to questions or inventing personal details. It infers
-meaning despite typos while preserving the exact typed prefix.
+suggestion is generated and displayed. The default system prompt was trimmed
+from 284 to 245 measured tokens; custom instructions remain verbatim. See
+[sentence latency experiments](sentence-latency-experiments.md) for timings and
+quality limits. The prompt asks for a concise, likely ending in the language of
+the writing, with the exact typed prefix preserved.
 Model quality still varies: prefix/format checks reject malformed output, but do
 not guarantee grammar or semantic quality.
 
@@ -45,10 +49,12 @@ Motion is enabled. Suggestion buttons size to their current text. Requests have 
 with full details on hover. Failures are not retried and
 providers are never switched automatically.
 
-Requests are throttled to 500 ms from their start time. Up to five requests run concurrently, each using the latest
-context. A newer usable result cancels older requests, and late older results
-cannot replace it. Each valid newer result appears immediately, even while later
-requests are running. Failed or empty results preserve useful pending requests and any still-valid visible suggestions.
+Sentence generation runs one request at a time. Continued typing updates the queued
+context; when the active request finishes, the service immediately starts the
+latest input without an additional throttle. Intermediate snapshots are coalesced.
+A result that still matches the current text is shown immediately and trimmed as
+typing continues. Stale results cannot replace a newer usable completion. Failed
+or empty results preserve any still-valid visible suggestion.
 The last successful completion is cached in memory with its input, language, and
 model selection. Returning to that input after a focus change or keyboard restart
 restores the suggestions without a request. Changing the system prompt clears the

@@ -10,14 +10,28 @@ import FoundationModels
         let model = AppleFoundationModelProvider.descriptor(
             capabilities: SystemLanguageModel.default.capabilities
         )
-        let samples = [
-            ("I want", "en"),
-            ("Kannst du mir bitte", "de"),
-            ("I think we should", "en"),
-            ("Ich freue mich auf", "de"),
-            ("Thanks for your help with the project. I will send you", "en"),
-            ("Vielen Dank für deine Nachricht. Ich würde gerne", "de"),
-        ]
+        let instructions = try BenchmarkSupport.argument("--instructions-file").map {
+            try String(contentsOfFile: $0, encoding: .utf8)
+        }
+        let samples =
+            CommandLine.arguments.contains("--quality")
+            ? SentenceBenchmarkSamples.quality : SentenceBenchmarkSamples.standard
+        if CommandLine.arguments.contains("--parallel")
+            || CommandLine.arguments.contains("--parallel-all")
+        {
+            try await benchmarkParallel(
+                provider: provider,
+                selection: selection,
+                model: model,
+                samples: samples,
+                instructions: instructions
+            )
+            return
+        }
+        let instructionTokens = try await SystemLanguageModel.default.tokenCount(
+            for: Instructions(instructions ?? SentenceCompletionPrompt.instructions)
+        )
+        print("Instruction tokens: \(instructionTokens)")
         var times: [Double] = []
         var validCount = 0
         for (text, language) in samples {
@@ -30,29 +44,24 @@ import FoundationModels
             let output = try await provider.generate(
                 request: AIGenerationRequest(
                     prompt: SentenceCompletionPrompt.input(input),
-                    sentenceCompletions: true
+                    sentenceCompletions: true,
+                    systemInstructions: instructions
                 ),
                 selection: selection,
                 model: model
             )
-            let elapsed = start.duration(to: .now).components
-            let milliseconds = Double(elapsed.seconds) * 1000 + Double(elapsed.attoseconds) / 1e15
-            let candidates = try JSONDecoder().decode([String].self, from: Data(output.utf8))
-            let suffix = candidates.first.map { String($0.dropFirst(text.count)) } ?? ""
-            let valid =
-                candidates.count == 1 && candidates[0].hasPrefix(text)
-                && !suffix.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                && suffix.count <= 240 && !suffix.contains(where: { $0.isNewline })
-                && !suffix.unicodeScalars.contains(where: {
-                    CharacterSet.controlCharacters.contains($0)
-                })
+            let milliseconds = BenchmarkSupport.milliseconds(start.duration(to: .now))
+            let valid = BenchmarkSupport.completion(from: output, input: text) != nil
             if valid { validCount += 1 }
             times.append(milliseconds)
             print(String(format: "%.1f ms valid=%@", milliseconds, String(valid)))
             print("  \(text.debugDescription) → \(output)")
         }
         let sorted = times.sorted()
-        let median = (sorted[2] + sorted[3]) / 2
+        let middle = sorted.count / 2
+        let median =
+            sorted.count.isMultiple(of: 2)
+            ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle]
         print(
             String(
                 format: "Requests: %d; median: %.1f ms; max: %.1f ms",
@@ -62,8 +71,13 @@ import FoundationModels
             )
         )
         print(
-            "Usable single completions: \(validCount)/\(times.count). Inspect outputs for language quality."
+            "Nonempty completions passing prefix/format checks: \(validCount)/\(times.count). Inspect outputs for language quality."
         )
+        if CommandLine.arguments.contains("--quality") {
+            print(
+                "Quality checks also require unchanged output for the two already-complete sentences."
+            )
+        }
         print(
             "Provider timings include token counting; exclude typing throttle, Accessibility capture, and UI display."
         )

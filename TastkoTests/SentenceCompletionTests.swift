@@ -191,6 +191,63 @@ struct SentenceCompletionTests {
         #expect(fixture.service.suggestions == ["sleep."])
     }
 
+    // MARK: - Serial Request Scheduling
+    @Test func serialGenerationCoalescesTypingAndStartsTheNewestContext() async throws {
+        let fixture = SentenceFixture()
+        fixture.maximumConcurrentRequests = 1
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        for text in ["I want to", "I want to send", "I want to send the report"] {
+            fixture.current = predictionContext(text)
+            await Task.yield()
+        }
+        #expect(fixture.requests.count == 1)
+        fixture.finish(0, #"["I want to take a break."]"#)
+        await eventually { fixture.requests.count == 2 }
+        let payload = try #require(
+            JSONSerialization.jsonObject(with: Data(fixture.prompts[1].utf8)) as? [String: Any]
+        )
+        #expect(payload["textBeforeCursor"] as? String == "I want to send the report")
+        #expect(fixture.service.suggestions.isEmpty)
+        fixture.finish(1, #"["I want to send the report today."]"#)
+        await eventually { fixture.service.suggestions == [" today."] }
+        await eventually { !fixture.service.isGenerating }
+        #expect(fixture.requests.count == 2)
+    }
+
+    @Test func serialGenerationPublishesReusableResultWhileRefreshingLatestInput() async {
+        let fixture = SentenceFixture()
+        fixture.maximumConcurrentRequests = 1
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.current = predictionContext("I want to")
+        await Task.yield()
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { fixture.service.suggestions == [" rest."] }
+        await eventually { fixture.requests.count == 2 }
+        #expect(fixture.service.isGenerating)
+        fixture.finish(1, #"["I want to walk."]"#)
+        await eventually { fixture.service.suggestions == [" walk."] }
+    }
+
+    @Test func serialGenerationRejectsOldFocusBeforeStartingNewTarget() async {
+        let fixture = SentenceFixture()
+        fixture.maximumConcurrentRequests = 1
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.current = predictionContext("Tomorrow", elementID: 2)
+        await eventually { !fixture.service.isGenerating }
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { fixture.requests.count == 2 }
+        #expect(fixture.service.suggestions.isEmpty)
+        #expect(fixture.cancelled == [0])
+        fixture.finish(1, #"["Tomorrow will be sunny."]"#)
+        await eventually { fixture.service.suggestions == [" will be sunny."] }
+    }
+
     // MARK: - Failed Refresh
     @Test func failedNewerRequestDoesNotDiscardPendingSuggestion() async {
         let fixture = SentenceFixture()
@@ -313,8 +370,10 @@ private final class SentenceFixture {
     var prompts: [String] = []
     var cancelled: [Int] = []
     var interval: Duration = .zero
+    var maximumConcurrentRequests = 5
     @ObservationIgnored lazy var service = SentenceCompletionService(
         minimumInterval: interval,
+        maximumConcurrentRequests: maximumConcurrentRequests,
         context: { [unowned self] in current },
         wordSuggestions: { [unowned self] _ in words },
         selection: { [unowned self] in selected },
