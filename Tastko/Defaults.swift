@@ -142,6 +142,10 @@ extension Defaults.Keys {
         default: PointerVisibilityPolicy.defaultInactivityDelay
     )
 
+    static let sentenceCompletionSystemPrompt = Defaults.Key<String>(
+        "sentenceCompletionSystemPrompt",
+        default: ""
+    )
     static let textPredictionEnabled = Defaults.Key<Bool>("textPredictionEnabled", default: true)
 
     static let floatingWindowSize = Defaults.Key<StoredWindowSize>(

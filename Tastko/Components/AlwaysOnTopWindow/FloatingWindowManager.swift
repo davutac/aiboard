@@ -53,6 +53,33 @@ final class FloatingWindowManager {
         windows[id] = WindowInstance(controller: controller, isVisible: true)
     }
 
+    // MARK: - Child Windows
+    /// Reusing an ID updates the existing child. IDs are scoped to the parent.
+    func showChild<Content: View>(
+        _ id: ChildWindowID,
+        attachedTo parentID: FloatingWindowID,
+        configuration: ChildWindowConfiguration? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        let controller = controller(for: parentID)
+        if windows[parentID] == nil {
+            windows[parentID] = WindowInstance(controller: controller, isVisible: false)
+        }
+        controller.showChild(id, configuration: configuration, content: content)
+    }
+
+    func hideChild(_ id: ChildWindowID, attachedTo parentID: FloatingWindowID) {
+        windows[parentID]?.controller.hideChild(id)
+    }
+
+    func removeChild(_ id: ChildWindowID, attachedTo parentID: FloatingWindowID) {
+        windows[parentID]?.controller.removeChild(id)
+    }
+
+    func isChildVisible(_ id: ChildWindowID, attachedTo parentID: FloatingWindowID) -> Bool {
+        windows[parentID]?.controller.isChildVisible(id) == true
+    }
+
     func toggle<Content: View>(
         _ id: FloatingWindowID,
         configuration: AlwaysOnTopWindowConfiguration = .init(),

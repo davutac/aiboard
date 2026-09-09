@@ -1,4 +1,5 @@
 import CoreGraphics
+import SwiftUI
 
 // MARK: - Tastko Window IDs
 extension FloatingWindowID {
@@ -15,6 +16,31 @@ extension AlwaysOnTopWindowConfiguration {
             allowsResizing: false,
             maintainsContentAspectRatio: false,
             storageKey: "keyboardDebug"
+        )
+    }
+}
+
+// MARK: - Keyboard Companion Window
+extension ChildWindowID {
+    static let keyboardCompanion = ChildWindowID("keyboardCompanion")
+}
+
+extension ChildWindowConfiguration {
+    static var keyboardCompanion: Self {
+        Self(
+            title: "Keyboard companion",
+            alignment: .start,
+            size: .parentWidth(),
+            gap: 8,
+            style: ChildWindowStyle(
+                background: AnyShapeStyle(Color.clear),
+                foreground: KeyboardDesign.Palette.label,
+                cornerRadius: 0,
+                borderWidth: 0,
+                contentInsets: EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0),
+                hasShadow: false
+            ),
+            passesThroughEmptyArea: true
         )
     }
 }

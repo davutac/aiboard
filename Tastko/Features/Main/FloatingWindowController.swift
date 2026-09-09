@@ -15,6 +15,7 @@ enum FloatingWindowPresentationState: Equatable {
 @MainActor
 final class FloatingWindowController {
     static let shared = FloatingWindowController()
+    var sentenceService: SentenceCompletionService?
 
     private let floatingWindowManager = FloatingWindowManager.shared
 
@@ -67,6 +68,22 @@ final class FloatingWindowController {
                 minimize: { self?.minimize() },
                 expand: { self?.expand() }
             )
+        }
+        if presentationState == .expanded && !isScreenLocked,
+            let sentenceService,
+            sentenceService.isGenerating || !sentenceService.suggestions.isEmpty
+                || sentenceService.error != nil
+        {
+            floatingWindowManager.showChild(
+                .keyboardCompanion,
+                attachedTo: .main,
+                configuration: .keyboardCompanion
+            ) {
+                KeyboardCompanionView()
+            }
+        }
+        else {
+            floatingWindowManager.hideChild(.keyboardCompanion, attachedTo: .main)
         }
         updatePredictionLifecycle()
     }

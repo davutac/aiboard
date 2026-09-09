@@ -28,3 +28,13 @@ Prediction changes update without fades. Reduce Motion disables keypress animati
 To add a visual state, extend `KeycapSurface` and its previews. To add a color role, create a named color asset with both appearances and expose it through `KeyboardDesign.Palette`. Avoid per-screen themes or duplicated keycap drawing code.
 
 The optional function toolbar sits directly below the titlebar and above predictions. Its complete height comes from the scaled keycap height plus vertical insets. Display-synchronized frame updates drive its clipped reveal and the native window geometry, keeping the main key area stable. Constraints and saved geometry update at completion. One permanent toggle sits to the right of the language selector in the prediction row; imported toolbar toggles are hidden without reflowing the remaining keys. System controls are the normal layer; the existing one-shot Fn modifier exposes F1–F12.
+
+## Settings
+
+Settings uses a native segmented picker centered in the compact toolbar, with General, AI Providers, and the Debug-only AI Debug destination. The compact window has no sidebar. System materials, colors, typography, selection highlights, and control shapes follow macOS appearance and accessibility preferences.
+
+The navigation picker uses the system large control size, intrinsic sizing, text-only segment labels, and per-segment help. This follows Apple's [segmented control guidance](https://developer.apple.com/design/human-interface-guidelines/segmented-controls) for macOS toolbar view switching. Apple's [AppKit design session](https://developer.apple.com/videos/play/wwdc2025/310/) explains that smaller controls retain rounded rectangles while large controls use capsules; the app does not draw or clip the selection highlight itself.
+
+General and AI Providers use grouped `Form` sections with labeled rows and standard toggles, pickers, and buttons. The active provider is a single picker; each provider has its own model, option, status, and configuration rows. Provider refresh sits at the trailing edge of a compact title bar. A narrow `SettingsWindowConfiguration` bridge applies the native compact AppKit toolbar style because the Settings scene otherwise forces an expanded preference toolbar. No custom glass menu wrappers, hit areas, or corner radii are applied.
+
+AI Debug uses native input and output groups, system body text, the standard editor background, and a default Generate button. View spacing and page insets use SwiftUI defaults; no explicit glass containers wrap ordinary settings controls. Descriptions appear only when needed to explain behavior, status, or recovery. Settings services and persistence are independent of the presentation.

@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class AlwaysOnTopWindowController {
     private var panel: AlwaysOnTopPanel?
+    private var children: [ChildWindowID: ChildWindowController] = [:]
     private var hostingView: MouseInteractiveHostingView<AnyView>?
     private let windowDimensions = WindowDimensions()
     private var sizeDidChange: (@MainActor (CGSize) -> Void)?
@@ -52,7 +53,46 @@ final class AlwaysOnTopWindowController {
 
     func hide() {
         cancelGeometryAnimation()
+        for child in children.values { child.hide(preservingPresentation: true) }
         panel?.orderOut(nil)
+    }
+
+    // MARK: - Child Windows
+    func showChild<Content: View>(
+        _ id: ChildWindowID,
+        configuration: ChildWindowConfiguration? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        let configuration = configuration ?? ChildWindowConfiguration()
+        let content = AnyView(content())
+        if let child = children[id] {
+            child.update(configuration: configuration, content: content)
+        }
+        else {
+            children[id] = ChildWindowController(configuration: configuration, content: content)
+        }
+        if let panel { children[id]?.synchronize(with: panel) }
+    }
+
+    func hideChild(_ id: ChildWindowID) {
+        children[id]?.hide()
+    }
+
+    func removeChild(_ id: ChildWindowID) {
+        children.removeValue(forKey: id)?.hide()
+    }
+
+    func childFrame(_ id: ChildWindowID) -> CGRect? {
+        children[id]?.panel.frame
+    }
+
+    func isChildVisible(_ id: ChildWindowID) -> Bool {
+        children[id]?.panel.isVisible == true
+    }
+
+    private func updateChildWindows() {
+        guard let panel else { return }
+        for child in children.values { child.synchronize(with: panel) }
     }
 
     // MARK: - Presentation
@@ -71,6 +111,7 @@ final class AlwaysOnTopWindowController {
         if !panel.isVisible {
             panel.orderFrontRegardless()
         }
+        updateChildWindows()
     }
 
     // MARK: - Geometry Animation
@@ -118,6 +159,7 @@ final class AlwaysOnTopWindowController {
                 height: initialFrame.height + (targetFrame.height - initialFrame.height) * fraction
             )
             panel.setFrame(frame, display: false)
+            self.updateChildWindows()
             progress(fraction)
             if fraction == 1 {
                 self.updateGeometry(configuration: configuration)
@@ -204,6 +246,7 @@ final class AlwaysOnTopWindowController {
             guard let self else { return }
             guard !self.isApplyingConfiguration else { return }
 
+            self.updateChildWindows()
             self.originDidChange?(origin)
         }
         self.hostingView = hostingView
@@ -219,6 +262,7 @@ final class AlwaysOnTopWindowController {
     }
 
     private func updateWindowDimensions(for panel: AlwaysOnTopPanel, fallback: CGSize) {
+        updateChildWindows()
         windowDimensions.size = panel.contentSize(fallback: fallback)
     }
 

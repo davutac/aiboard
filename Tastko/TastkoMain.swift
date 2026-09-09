@@ -6,7 +6,7 @@ import SwiftUI
 enum TastkoMain {
     // MARK: - Entry Point
     @MainActor
-    static func main() {
+    static func main() async {
         let arguments = CommandLine.arguments
         if arguments.contains("--login-window")
             || Bundle.main.bundleIdentifier == "com.davutcaliskan.Tastko.LoginWindow"
@@ -17,6 +17,11 @@ enum TastkoMain {
 
         // Root must never enter the normal user app or read user profile files.
         guard getuid() != 0 else { exit(EXIT_FAILURE) }
+        #if DEBUG
+            if arguments.contains("--ai-diagnostics") {
+                exit(await AIProviderDiagnostics.run(arguments: arguments))
+            }
+        #endif
         if arguments.count == 3, arguments[1] == "--export-login-keyboard" {
             do {
                 try LoginWindowKeyboard.export(to: URL(filePath: arguments[2]))
