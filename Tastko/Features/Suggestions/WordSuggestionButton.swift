@@ -15,6 +15,7 @@ struct WordSuggestionButton: View {
     // MARK: - Body
     var body: some View {
         suggestionLabel
+            .contentTransition(reduceMotion ? .identity : .opacity)
             .font(KeyboardDesign.Typography.suggestion)
             .foregroundStyle(KeyboardDesign.Palette.label)
             .lineLimit(1)
@@ -29,6 +30,10 @@ struct WordSuggestionButton: View {
             }
             .scaleEffect(pressedButton == .left ? 0.97 : 1)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.1), value: pressedButton)
+            .animation(
+                reduceMotion ? nil : .smooth(duration: 0.32),
+                value: service.typedPrefix
+            )
             .overlay {
                 KeyMouseEventView(
                     pressedButton: $pressedButton,

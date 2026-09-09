@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - WordSuggestionsView
 struct WordSuggestionsView: View {
     let service: TextPredictionService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: - Body
     var body: some View {
@@ -15,6 +16,10 @@ struct WordSuggestionsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: KeyboardDesign.Metrics.suggestionHeight)
+        .animation(
+            reduceMotion ? nil : .smooth(duration: 0.32),
+            value: service.suggestions
+        )
     }
 
     // MARK: - Fitting Suggestions
@@ -24,6 +29,9 @@ struct WordSuggestionsView: View {
                 index,
                 word in
                 WordSuggestionButton(word: word, index: index, service: service)
+                    .transition(
+                        reduceMotion ? .identity : .offset(x: -8).combined(with: .opacity)
+                    )
             }
         }
     }
