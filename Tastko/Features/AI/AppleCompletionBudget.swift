@@ -9,7 +9,8 @@ nonisolated struct AppleCompletionBudget {
     static let safetyMargin = 256
 
     var instructionLimit: Int { Self.instructionLimit(for: contextSize) }
-    var responseTokens: Int { max(256, promptTokens * 2 + 128) }
+    // Reserve one copy of the input plus its ending and structured output.
+    var responseTokens: Int { max(256, promptTokens + 128) }
     var totalTokens: Int {
         instructionTokens + promptTokens + schemaTokens + responseTokens + Self.safetyMargin
     }

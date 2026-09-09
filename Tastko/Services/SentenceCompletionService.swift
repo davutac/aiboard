@@ -269,7 +269,7 @@ final class SentenceCompletionService {
                     seen.insert(suffix).inserted
                 else { return nil }
                 return suffix
-            }.prefix(2)
+            }.prefix(1)
         )
     }
 }

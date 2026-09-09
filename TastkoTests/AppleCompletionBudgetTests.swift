@@ -12,8 +12,8 @@ struct AppleCompletionBudgetTests {
             contextSize: 4096
         )
         try budget.validate()
-        #expect(budget.responseTokens == 1152)
-        #expect(budget.totalTokens == 3144)
+        #expect(budget.responseTokens == 640)
+        #expect(budget.totalTokens == 2632)
     }
 
     @Test func oversizedCustomPromptIsRejected() {
@@ -29,7 +29,7 @@ struct AppleCompletionBudgetTests {
     @Test func combinedContextMustFitEvenWhenInstructionsFit() {
         let budget = AppleCompletionBudget(
             instructionTokens: 1000,
-            promptTokens: 1000,
+            promptTokens: 1300,
             schemaTokens: 200,
             contextSize: 4096
         )

@@ -8,15 +8,14 @@ nonisolated private struct AppleTextResponse {
     var text: String
 }
 
-// MARK: - Guided Sentence Completions
+// MARK: - Guided Sentence Completion
 @Generable
-nonisolated private struct AppleSentenceCompletions {
+nonisolated private struct AppleSentenceCompletion {
     @Guide(
         description:
-            "Two completed versions of the input. Each must preserve the exact input as its prefix and finish the sentence.",
-        .count(2)
+            "The entire textBeforeCursor copied verbatim, followed by one short sentence ending."
     )
-    var completions: [String]
+    var completedText: String
 }
 
 // MARK: - Apple Foundation Model Provider
@@ -125,7 +124,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
                 ),
                 promptTokens: try await systemModel.tokenCount(for: Prompt(request.prompt)),
                 schemaTokens: try await systemModel.tokenCount(
-                    for: AppleSentenceCompletions.generationSchema
+                    for: AppleSentenceCompletion.generationSchema
                 ),
                 contextSize: systemModel.contextSize
             )
@@ -145,13 +144,13 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
                 options.maximumResponseTokens = responseTokens
                 let response = try await session.respond(
                     to: request.prompt,
-                    generating: AppleSentenceCompletions.self,
+                    generating: AppleSentenceCompletion.self,
                     options: options,
                     contextOptions: context
                 )
                 try Task.checkCancellation()
                 return String(
-                    decoding: try JSONEncoder().encode(response.content.completions),
+                    decoding: try JSONEncoder().encode([response.content.completedText]),
                     as: UTF8.self
                 )
             }

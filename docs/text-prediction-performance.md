@@ -30,3 +30,39 @@ Measured locally on September 5, 2026 with Xcode 27 beta 6 and optimized builds:
 | Full prewarmed model response | 8 | 633.4 ms | 1160.4 ms |
 
 Native timings were remeasured after adopting the candidate API; context and AI measurements are from the earlier provider benchmark with unchanged context capture and model generation. AI timings exclude the 150 ms debounce. One of eight model samples returned no valid prefix completion and is excluded from the first-valid timing. These small samples show fast native completion, but the 700 ms AI target is not consistently met; first-valid p95 plus debounce is approximately 1083 ms. Context capture and provider benchmarks were measured separately, not as end-to-end edit-to-display timings. Completion insertion and retained external-app focus were checked in TextEdit, Chrome, and a VS Code Insiders scratch editor.
+
+## Sentence suggestions
+
+Run `bash script/benchmark_sentences.sh` to measure the actual sentence provider
+with six fixed English/German prompts. It prints timings, generated text, and the
+number of usable single completions. A usable result passes prefix and suffix
+format checks; this is not a grammar or semantic quality score.
+
+Measured locally on September 9, 2026 with Xcode 27 beta 6 and optimized binaries,
+using three rounds of the same six prompts per implementation:
+
+| Implementation | Requests | Median | Maximum |
+| --- | ---: | ---: | ---: |
+| Original two-completion array | 18 | 1106.6 ms | 1309.3 ms |
+| One `completedText` field | 18 | 918.6 ms | 1202.8 ms |
+
+The single-suggestion version reduced median provider latency by 17%; all 18
+responses passed single-completion prefix/format checks. The measurement includes
+token budgeting and full generation, excludes the 500 ms request throttle,
+Accessibility capture, and UI presentation, and does not represent cold-start or
+continuous-typing latency. Requests used fresh sessions, default instructions and
+model options, and no word hints or explicit prewarming. Results vary with model
+version, output length, and system load.
+
+Apple's [performance guidance](https://developer.apple.com/documentation/foundationmodels/analyzing-the-runtime-performance-of-your-foundation-models-app)
+explains how generated tokens affect response time. Generating one field removes
+the second ending and repeated input from the output.
+The [guided-generation documentation](https://developer.apple.com/documentation/foundationmodels/generating-swift-data-structures-with-guided-generation)
+describes schema constraints and their token cost. We retain the schema in the
+prompt and the exact-prefix validation; shorter wording and a one-element array
+produced suffix-only responses in local experiments that validation rejected.
+
+Apple recommends at least a one-second lead time for
+[`prewarm(promptPrefix:)`](https://developer.apple.com/documentation/foundationmodels/languagemodelsession/prewarm(promptprefix:)).
+Calling it immediately before generation would not provide that window. This
+change keeps the existing scheduling, cancellation, and model-option behavior.

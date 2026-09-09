@@ -49,10 +49,16 @@ struct SentenceCompletionTests {
     @Test func preservesPartialWordsAndSpacingWithoutRewritingInput() {
         #expect(
             SentenceCompletionService.completions(
+                from: #"["Rewritten input", "I want to rest.", "I want to walk."]"#,
+                input: "I wan"
+            ) == ["t to rest."]
+        )
+        #expect(
+            SentenceCompletionService.completions(
                 from:
                     #"["I wan to go home.","I wan to go home.","I want to rest.","Rewritten input"]"#,
                 input: "I wan"
-            ) == [" to go home.", "t to rest."]
+            ) == [" to go home."]
         )
         #expect(
             SentenceCompletionService.completions(from: #"["Hi\nthere", "Hi"]"#, input: "Hi")
@@ -69,10 +75,11 @@ struct SentenceCompletionTests {
         await eventually { fixture.requests.count == 1 }
         #expect(fixture.service.isGenerating)
         fixture.finish(0, #"["I want to go home.","I want to rest."]"#)
-        await eventually { fixture.service.suggestions.count == 2 }
+        await eventually { fixture.service.suggestions == [" to go home."] }
         #expect(!fixture.service.isGenerating)
-        #expect(fixture.service.accept(" to rest."))
-        #expect(fixture.insertions == [" to rest."])
+        #expect(!fixture.service.accept(" to rest."))
+        #expect(fixture.service.accept(" to go home."))
+        #expect(fixture.insertions == [" to go home."])
         #expect(fixture.service.suggestions.isEmpty)
     }
 

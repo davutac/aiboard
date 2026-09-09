@@ -20,8 +20,8 @@ the override. Response schemas and exact-prefix insertion checks remain enforced
 
 Apple counts instruction, input, and response-schema tokens before generation.
 Instructions are limited to the smaller of 1,024 tokens or one quarter of the
-model's context size. The combined budget reserves output space for two copies
-of the input plus their endings, and 256 tokens of headroom. Oversized requests
+model's context size. The combined budget reserves output space for one copy
+of the input plus its ending, and 256 tokens of headroom. Oversized requests
 fail with a clear error; custom instructions are never silently truncated.
 Settings displays the instruction token count and limit.
 
@@ -31,9 +31,10 @@ It includes up to five currently available word suggestions for the same context
 sampled when generation starts. These are optional hints; generation never waits
 for word predictions, and later word updates do not trigger another request.
 Apple receives the instructions through `LanguageModelSession` and returns a
-native `@Generable` array. The prompt prioritizes exact prefix
-preservation, the language of the writing, concise endings, and plausible
-alternatives without replying to questions or inventing personal details. It infers
+native `@Generable` object with one `completedText` string. Only one sentence
+suggestion is generated and displayed. The prompt prioritizes exact prefix
+preservation, the language of the writing, and a concise, likely ending
+without replying to questions or inventing personal details. It infers
 meaning despite typos while preserving the exact typed prefix.
 Model quality still varies: prefix/format checks reject malformed output, but do
 not guarantee grammar or semantic quality.
