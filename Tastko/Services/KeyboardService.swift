@@ -377,6 +377,7 @@ final class KeyboardService {
         do {
             try checkLockScreenInput()
             let flags = currentFlags(for: press, resolved: modifiers)
+            if !isScreenLocked { typingObserver?.prepareForInput() }
             try eventPoster.postKeyRepeat(press.stroke.key, modifiers: flags)
             if !isScreenLocked {
                 typingObserver?.didPostKey(KeyStroke(press.stroke.key, modifiers: flags))

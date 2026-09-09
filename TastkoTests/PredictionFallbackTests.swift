@@ -73,6 +73,31 @@ struct PredictionFallbackTests {
     }
 
     // MARK: - Real Keyboard Delivery Pipeline
+    @Test func heldBackspaceClearsBufferAndSuggestions() async throws {
+        let fixture = FallbackFixture()
+        fixture.native.immediateWords = ["hello"]
+        fixture.service.start(polling: false)
+        defer { fixture.service.stop() }
+        let keyboard = KeyboardService(targetResolver: fixture, eventPoster: FallbackEventPoster())
+        keyboard.typingObserver = fixture.provider
+        keyboard.inputDidChange = { fixture.service.keyboardDidChange() }
+        try await keyboard.type("hel")
+        fixture.service.refresh()
+        await eventually { fixture.service.suggestions == ["hello"] }
+
+        let token = try keyboard.beginKeyPress(KeyStroke(.delete), latchedModifiers: [])
+        #expect(fixture.context?.input.context == "he")
+        try keyboard.repeatKeyPress(token)
+        #expect(fixture.context?.input.context == "h")
+        try keyboard.repeatKeyPress(token)
+        try keyboard.endKeyPress(token)
+        fixture.service.refresh()
+        #expect(fixture.context == nil)
+        #expect(fixture.service.completionContext == nil)
+        #expect(fixture.service.suggestions.isEmpty)
+        #expect(!fixture.service.hasTextContext)
+    }
+
     @Test func ownTaggedEventsPreserveContextAndExternalInputClearsIt() throws {
         let fixture = FallbackFixture()
         fixture.provider.startObserving({})
