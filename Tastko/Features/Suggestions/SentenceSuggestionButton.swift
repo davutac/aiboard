@@ -14,11 +14,11 @@ struct SentenceSuggestionButton: View {
         Text("…" + suggestion.trimmingCharacters(in: .whitespaces))
             .contentTransition(reduceMotion ? .identity : .opacity)
             .font(.system(size: 13, weight: .medium))
-            .lineLimit(2)
+            .lineLimit(1)
             .multilineTextAlignment(.leading)
-            .frame(maxWidth: maximumWidth, alignment: .leading)
             .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .frame(maxWidth: maximumWidth, alignment: .leading)
+            .frame(height: KeyboardDesign.Metrics.companionHeight)
             .glassEffect(.regular.interactive())
             .overlay {
                 // Match word-key input: never create SwiftUI keyboard-focus proxies in this panel.

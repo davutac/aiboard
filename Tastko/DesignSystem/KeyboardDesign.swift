@@ -35,6 +35,8 @@ enum KeyboardDesign {
         static let rowSpacing: CGFloat = 8
         static let rowInset: CGFloat = 12
         static let functionToolbarVerticalInset: CGFloat = 2
+        static let companionHeight: CGFloat = 28
+        static let companionSpacing: CGFloat = 8
         static let suggestionHeight: CGFloat = 32
         static let suggestionTopInset: CGFloat = 7
         static let suggestionBottomInset: CGFloat = 2

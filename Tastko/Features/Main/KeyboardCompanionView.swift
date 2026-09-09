@@ -9,14 +9,16 @@ struct KeyboardCompanionView: View {
 
     // MARK: - Body
     var body: some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
+        GlassEffectContainer(spacing: KeyboardDesign.Metrics.companionSpacing) {
+            HStack(spacing: KeyboardDesign.Metrics.companionSpacing) {
                 if let service = floatingWindowController.sentenceService {
                     if service.isGenerating {
                         ProgressView()
                             .controlSize(.small)
-                            .frame(width: 16, height: 16)
-                            .padding(8)
+                            .frame(
+                                width: KeyboardDesign.Metrics.companionHeight,
+                                height: KeyboardDesign.Metrics.companionHeight
+                            )
                             .glassEffect()
                             .glassEffectID("loading", in: glassNamespace)
                             .glassEffectTransition(reduceMotion ? .identity : .matchedGeometry)
@@ -29,11 +31,7 @@ struct KeyboardCompanionView: View {
                             SentenceSuggestionButton(
                                 suggestion: suggestion,
                                 index: index,
-                                maximumWidth: max(
-                                    1,
-                                    (dimensions.parentSize.width - (service.isGenerating ? 96 : 56))
-                                        / 2
-                                ),
+                                maximumWidth: suggestionWidth(service: service),
                                 service: service
                             )
                             .glassEffectID(
@@ -50,11 +48,12 @@ struct KeyboardCompanionView: View {
                         Label(error, systemImage: "exclamationmark.circle")
                             .font(.caption)
                             .lineLimit(1)
+                            .padding(.horizontal, 12)
                             .frame(
-                                maxWidth: max(80, dimensions.parentSize.width - 70),
+                                maxWidth: availableContentWidth(service: service),
                                 alignment: .leading
                             )
-                            .padding(6)
+                            .frame(height: KeyboardDesign.Metrics.companionHeight)
                             .glassEffect()
                             .help(error)
                             .accessibilityLabel(error)
@@ -62,6 +61,7 @@ struct KeyboardCompanionView: View {
                 }
             }
         }
+        .frame(height: KeyboardDesign.Metrics.companionHeight)
         .environment(\.layoutDirection, .leftToRight)
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.32),
@@ -71,5 +71,19 @@ struct KeyboardCompanionView: View {
             reduceMotion ? nil : .smooth(duration: 0.32),
             value: floatingWindowController.sentenceService?.isGenerating
         )
+    }
+
+    // MARK: - Layout
+    private func availableContentWidth(service: SentenceCompletionService) -> CGFloat {
+        let loadingWidth =
+            service.isGenerating
+            ? KeyboardDesign.Metrics.companionHeight + KeyboardDesign.Metrics.companionSpacing : 0
+        return max(1, dimensions.parentSize.width - loadingWidth)
+    }
+
+    private func suggestionWidth(service: SentenceCompletionService) -> CGFloat {
+        let count = max(1, service.suggestions.count)
+        let spacing = CGFloat(count - 1) * KeyboardDesign.Metrics.companionSpacing
+        return max(1, (availableContentWidth(service: service) - spacing) / CGFloat(count))
     }
 }
