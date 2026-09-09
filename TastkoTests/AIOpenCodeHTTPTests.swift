@@ -15,6 +15,19 @@ nonisolated final class AIHTTPFixture: URLProtocol, @unchecked Sendable {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
         let handler = Self.lock.withLock { Self.response }
+        var request = request
+        if request.httpBody == nil, let stream = request.httpBodyStream {
+            stream.open()
+            defer { stream.close() }
+            var body = Data()
+            var buffer = [UInt8](repeating: 0, count: 4096)
+            while true {
+                let count = stream.read(&buffer, maxLength: buffer.count)
+                guard count > 0 else { break }
+                body.append(contentsOf: buffer.prefix(count))
+            }
+            request.httpBody = body
+        }
         let (status, data) = handler(request)
         let response = HTTPURLResponse(
             url: request.url!,
@@ -45,7 +58,11 @@ nonisolated final class AIHTTPJournal: @unchecked Sendable {
 @Suite(.serialized)
 struct AIOpenCodeHTTPTests {
     // MARK: - Session Fixture
-    private func session(journal: AIHTTPJournal, failure: Bool = false) -> URLSession {
+    private func session(
+        journal: AIHTTPJournal,
+        failure: Bool = false,
+        automaticToolChoiceOnly: Bool = false
+    ) -> URLSession {
         AIHTTPFixture.lock.withLock {
             AIHTTPFixture.response = { request in
                 journal.record(request)
@@ -54,12 +71,46 @@ struct AIOpenCodeHTTPTests {
                 else { return (401, Data()) }
                 let body: String
                 switch request.url!.path {
-                case "/session" where request.httpMethod == "POST": body = #"{"id":"sess_fixture"}"#
+                case "/session" where request.httpMethod == "POST":
+                    let permissions =
+                        (try? AIJSON.decode(request.httpBody ?? Data()))?["permission"].array ?? []
+                    #expect(
+                        permissions == [
+                            .object([
+                                "permission": .string("*"), "pattern": .string("*"),
+                                "action": .string("deny"),
+                            ]),
+                            .object([
+                                "permission": .string("StructuredOutput"), "pattern": .string("*"),
+                                "action": .string("allow"),
+                            ]),
+                        ]
+                    )
+                    body = #"{"id":"sess_fixture"}"#
                 case "/session/sess_fixture/message":
-                    body =
-                        failure
-                        ? #"{"info":{"error":{"name":"ProviderAuthError"}}}"#
-                        : #"{"info":{},"parts":[{"type":"text","text":"{\"text\":\"fixture\"}"}]}"#
+                    if failure {
+                        body = #"{"info":{"error":{"name":"ProviderAuthError"}}}"#
+                    }
+                    else if automaticToolChoiceOnly {
+                        let count = journal.paths.filter {
+                            $0 == "POST /session/sess_fixture/message"
+                        }.count
+                        let requestBody = try? AIJSON.decode(request.httpBody ?? Data())
+                        if count == 1 {
+                            #expect(requestBody?["format"]["type"].string == "json_schema")
+                            body =
+                                #"{"info":{"error":{"data":{"message":"only 'auto' is supported for tool_choice"}}}}"#
+                        }
+                        else {
+                            #expect(count == 2)
+                            #expect(requestBody?["format"]["type"].string == "text")
+                            body =
+                                #"{"info":{},"parts":[{"type":"text","text":"{\"text\":\"fixture\"}"}]}"#
+                        }
+                    }
+                    else {
+                        body = #"{"info":{"structured":{"text":"fixture"}},"parts":[]}"#
+                    }
                 default: body = "true"
                 }
                 return (200, Data(body.utf8))
@@ -82,13 +133,22 @@ struct AIOpenCodeHTTPTests {
     }
 
     // MARK: - Session Cleanup
-    @Test(arguments: [false, true]) func restrictedGenerationCleansUpSession(failure: Bool)
+    @Test(arguments: [false, true], [false, true]) func restrictedGenerationCleansUpSession(
+        failure: Bool,
+        automaticToolChoiceOnly: Bool
+    )
         async throws
     {
         let directory = try AIWorkspace.create()
         defer { try? FileManager.default.removeItem(at: directory) }
         let journal = AIHTTPJournal()
-        let owner = AIOpenCodeServerOwner(session: session(journal: journal, failure: failure))
+        let owner = AIOpenCodeServerOwner(
+            session: session(
+                journal: journal,
+                failure: failure,
+                automaticToolChoiceOnly: automaticToolChoiceOnly
+            )
+        )
         let adapter = OpenCodeAIProvider(owner: owner)
         do {
             let result = try await adapter.generate(

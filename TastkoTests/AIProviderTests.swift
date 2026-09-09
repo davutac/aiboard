@@ -88,6 +88,28 @@ struct AIProviderTests {
         #expect(try AITextOutput.openCode(response) == " OK ")
     }
 
+    @Test func openCodeDecodesNativeStructuredOutput() throws {
+        let response = try AIJSON.decode(
+            Data(
+                #"{"info":{"structured":{"completions":["I want to rest.","I want to walk."]}},"parts":[]}"#
+                    .utf8
+            )
+        )
+        let text = try AITextOutput.openCode(response, sentenceCompletions: true)
+        #expect(
+            try JSONDecoder().decode([String].self, from: Data(text.utf8)) == [
+                "I want to rest.", "I want to walk.",
+            ]
+        )
+        let generic = try AIJSON.decode(
+            Data(#"{"info":{"structured":{"text":" OK "}},"parts":[]}"#.utf8)
+        )
+        #expect(try AITextOutput.openCode(generic) == " OK ")
+        #expect(throws: AIProviderError.invalidOutput) {
+            try AITextOutput.openCode(generic, sentenceCompletions: true)
+        }
+    }
+
     // MARK: - Prompt and Option Forwarding
     @Test func openCodeKeepsProviderModelAndVariantIdentifiers() throws {
         let body = try OpenCodeAIProvider.promptBody(
@@ -101,7 +123,50 @@ struct AIProviderTests {
         #expect(body["model"]["providerID"].string == "provider")
         #expect(body["model"]["modelID"].string == "nested/model")
         #expect(body["variant"].string == "custom-variant")
+        #expect(body["format"]["type"].string == "json_schema")
+        #expect(body["format"]["schema"]["properties"]["text"]["type"].string == "string")
         #expect(body["parts"].array.first?["text"].string?.hasSuffix("input") == true)
+    }
+
+    @Test func openCodeSentenceRequestsUseArraySchemaAndCustomSystemInstructions() throws {
+        let body = try OpenCodeAIProvider.promptBody(
+            request: AIGenerationRequest(
+                prompt: "context",
+                sentenceCompletions: true,
+                systemInstructions: "Keep it brief."
+            ),
+            selection: AIProviderSelection(provider: .opencode, modelID: "provider/model")
+        )
+        #expect(body["format"]["schema"]["properties"]["completions"]["type"].string == "array")
+        #expect(body["system"].string?.contains("Keep it brief.") == true)
+        #expect(body["parts"].array.first?["text"].string == "context")
+    }
+
+    @Test func openCodeFallsBackOnlyForUnsupportedRequiredToolChoice() throws {
+        let response = try AIJSON.decode(
+            Data(
+                #"{"info":{"error":{"data":{"message":"[invalid_request_error] only \"auto\" is supported for tool_choice"}}}}"#
+                    .utf8
+            )
+        )
+        #expect(OpenCodeAIProvider.requiresAutomaticToolChoice(response))
+        #expect(!OpenCodeAIProvider.requiresAutomaticToolChoice(.object([:])))
+        let body = try OpenCodeAIProvider.promptBody(
+            request: AIGenerationRequest(prompt: "context", sentenceCompletions: true),
+            selection: AIProviderSelection(provider: .opencode, modelID: "provider/model"),
+            structuredOutput: false
+        )
+        #expect(body["format"]["type"].string == "text")
+        #expect(body["system"].string?.contains(AITextOutput.sentenceSchema) == true)
+        let output = try AIJSON.decode(
+            Data(
+                #"{"info":{},"parts":[{"type":"text","text":"{\"completions\":[\"I want to rest.\",\"I want to walk.\"]}"}]}"#
+                    .utf8
+            )
+        )
+        #expect(
+            try AITextOutput.openCode(output, sentenceCompletions: true).contains("I want to rest.")
+        )
     }
 
     // MARK: - Codex Restrictions

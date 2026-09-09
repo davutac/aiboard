@@ -1,16 +1,73 @@
 # AI providers
 
-Settings → AI Providers configures Codex, Claude Code, OpenCode, and Apple Foundation Model. AI starts Off. Selecting one provider does not erase the other providers' model or reasoning/variant selections. This feature does not change word predictions or send text automatically.
+Settings → AI Providers currently exposes Apple Foundation Model and Off. Codex,
+Claude Code, and OpenCode are disabled and hidden because their latency is a poor
+fit for live autocomplete. Their adapters, settings views, and saved model/options
+remain in the codebase for later use. The service can explicitly opt back in with
+`cliProvidersEnabled: true`; the app defaults to false.
 
-Use the Active provider picker to select a provider or Off. The model and reasoning/variant menus remain editable for inactive providers. Each CLI provider’s Details button opens Refresh, executable selection, and installation/login instructions. Apple Foundation Model shows system availability and a Refresh button.
+On startup, a saved active CLI provider is migrated to Apple. An explicit Off
+selection stays Off. Disabled providers cannot be selected, refreshed, or used for
+generation by the default service, including developer diagnostics.
 
-For Codex, Claude Code, and OpenCode, install and authenticate using the provider’s CLI. Tastko discovers executables from the user's login-shell PATH and common installation paths, with an optional explicit executable override. Status refreshes every five minutes while AI Providers settings are open; leaving the section stops periodic refresh. You can also refresh after signing in or updating a CLI. Discovery does not submit inference prompts.
+Apple Foundation Model runs on-device. With an active provider and text prediction
+enabled, sentence completions begin while typing once at least three letters are
+available. Requests contain up to 512 characters before the cursor. Word predictions
+remain separate. Set the active provider to Off to disable sentence requests.
 
-Codex reports its models and reasoning levels through its app-server protocol. OpenCode reports connected upstream models and variants through its local HTTP server. Claude uses a bundled version-aware catalog adapted from T3 Code; the catalog is not a guarantee that the account can access every model. The bundled catalog includes CLI reasoning/thinking options, excluding agent orchestration modes and prompt-injected options. Its metadata and attribution live in `Tastko/Features/AI/ClaudeModelCatalog.json` and `T3Code-LICENSE.txt`.
+## Sentence completions
 
-Apple Foundation Model runs on-device through the macOS 27 Foundation Models framework and requires Apple Intelligence to be enabled and ready. Discovery uses `SystemLanguageModel.availability` and `capabilities`. Its system model is managed by macOS and selected automatically; reasoning choices appear only when `.reasoning` is supported. Each generation creates a fresh `LanguageModelSession`, uses `@Generable` for the structured text response and `ContextOptions` for reasoning, and disallows tools. It uses no CLI, login, or API key and does not share sessions with word predictions. Availability is checked again for each request. Framework failures are mapped from macOS 27’s `LanguageModelError`.
+Settings → AI Providers → Sentence completion prompt contains a multiline editor.
+Its placeholder shows the default instructions. Leave it empty (or whitespace-only)
+to use the default; any other text replaces the instructions for all providers.
+Changes save automatically in the app's preferences and cancel pending completions.
+Use **Use default as starting point** to edit a copy, or **Reset to default** to clear
+the override. Response schemas and exact-prefix insertion checks remain enforced.
 
-See Apple’s [Foundation Models overview](https://developer.apple.com/documentation/foundationmodels/generating-content-and-performing-tasks-with-foundation-models) and [ContextOptions](https://developer.apple.com/documentation/foundationmodels/contextoptions).
+Apple counts instruction, input, and response-schema tokens before generation.
+Instructions are limited to the smaller of 1,024 tokens or one quarter of the
+model's context size. The combined budget reserves output space for two copies
+of the input plus their endings, and 256 tokens of headroom. Oversized requests
+fail with a clear error; custom instructions are never silently truncated.
+Settings displays the instruction token count and limit.
+
+`SentenceCompletionPrompt.swift` owns the shared completion instructions. Typed
+text is a separate JSON context payload, not part of the standing instructions.
+It includes up to five currently available word suggestions for the same context,
+sampled when generation starts. These are optional hints; generation never waits
+for word predictions, and later word updates do not trigger another request.
+Apple receives the instructions through `LanguageModelSession` and returns a
+native `@Generable` array. OpenCode uses `format: json_schema` and decodes
+`info.structured`, with a native completions array. Its session denies all tools
+except the built-in `StructuredOutput` formatter. If an upstream model rejects
+required tool choice (for example Muse 1.3), the adapter retries once in text mode
+with the same JSON schema in the prompt and validates the result locally. Codex and Claude include the
+same instructions in their restricted structured-text request. The prompt prioritizes exact prefix
+preservation, the language of the writing, concise endings, and plausible
+alternatives without replying to questions or inventing personal details. It infers
+meaning despite typos while preserving the exact typed prefix.
+Model quality still varies: prefix/format checks reject malformed output, but do
+not guarantee grammar or semantic quality.
+
+The child window shows a spinner before the clickable sentence continuations
+in a Liquid Glass container. Loading and suggestions can remain visible together. Suggestions animate in unless Reduce
+Motion is enabled. Suggestion buttons size to their current text. Requests have a 30-second timeout; failures show an error message
+with full details on hover. Apart from that tool-choice compatibility retry, failures are not retried and
+providers are never switched automatically.
+
+Requests are throttled from their start time: 500 ms for Apple and two seconds
+for CLI providers. Up to five requests run concurrently, each using the latest
+context. A newer usable result cancels older requests, and late older results
+cannot replace it. Each valid newer result appears immediately, even while later
+requests are running. Failed or empty results preserve useful pending requests and any still-valid visible suggestions.
+Cancelled requests retain their slot until they exit. Continued typing reuses matching endings and trims the typed prefix,
+keeping valid suggestions visible during refresh. Edits, focus changes, selecting
+text, shortcut modifiers, hiding/minimizing the keyboard, locking, or turning
+predictions off invalidate pending suggestions.
+Completions are requested only at the end of the text. Clicking revalidates the
+full context and target and inserts only the new suffix, preserving existing text
+and spacing. Typed context and generated completions are not persisted by Tastko; custom
+system instructions are saved in preferences.
 
 ## Try a request in Debug
 
@@ -30,7 +87,7 @@ let result = try await service.generate(
 // result.selection identifies the provider/model/options captured at request start.
 ```
 
-The default timeout is 180 seconds. Cancel the calling Swift task to cancel the request. Off, unavailable selections, authentication failures, timeout/cancellation, invalid output, and transport errors have distinct `AIProviderError` cases. No automatic retries or provider fallback occur. A nil option delegates to the provider default.
+The default timeout is 180 seconds. Cancel the calling Swift task to cancel the request. Off, unavailable selections, authentication failures, timeout/cancellation, invalid output, and transport errors have distinct `AIProviderError` cases. No automatic retries or provider fallback occur. A nil option uses light reasoning for Apple models that support reasoning; other providers use their default.
 
 Codex and Claude run one-shot commands with JSON Schema output. OpenCode uses a temporary restricted session on a managed loopback server, with abort/delete cleanup and a 30-second server idle timeout. An unexpected OpenCode server exit releases its resources; the next request starts a replacement. Failed generations are never replayed. This API has no chat history, attachments, streaming, or tool callbacks.
 

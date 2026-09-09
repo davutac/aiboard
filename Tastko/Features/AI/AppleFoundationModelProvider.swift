@@ -8,6 +8,17 @@ nonisolated private struct AppleTextResponse {
     var text: String
 }
 
+// MARK: - Guided Sentence Completions
+@Generable
+nonisolated private struct AppleSentenceCompletions {
+    @Guide(
+        description:
+            "Two completed versions of the input. Each must preserve the exact input as its prefix and finish the sentence.",
+        .count(2)
+    )
+    var completions: [String]
+}
+
 // MARK: - Apple Foundation Model Provider
 nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
     static let modelID = "system-default"
@@ -74,6 +85,9 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             throw AIProviderError.unavailableSelection
         }
         var context = ContextOptions(includeSchemaInPrompt: true)
+        if capabilities.contains(.reasoning) {
+            context.reasoningLevel = .light
+        }
         if let option = selection.optionID {
             guard capabilities.contains(.reasoning) else {
                 throw AIProviderError.unavailableSelection
@@ -102,18 +116,48 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             selection: selection,
             capabilities: systemModel.capabilities
         )
+        let instructions =
+            request.sentenceCompletions
+            ? SentenceCompletionPrompt.resolvedInstructions(request.systemInstructions)
+            : "You are a helpful assistant. Respond to the user and follow their requested output format."
+        var responseTokens: Int?
+        if request.sentenceCompletions {
+            let budget = AppleCompletionBudget(
+                instructionTokens: try await systemModel.tokenCount(
+                    for: Instructions(instructions)
+                ),
+                promptTokens: try await systemModel.tokenCount(for: Prompt(request.prompt)),
+                schemaTokens: try await systemModel.tokenCount(
+                    for: AppleSentenceCompletions.generationSchema
+                ),
+                contextSize: systemModel.contextSize
+            )
+            try budget.validate()
+            responseTokens = budget.responseTokens
+        }
+        try Task.checkCancellation()
         let session = LanguageModelSession(
             model: systemModel,
             tools: [],
-            instructions:
-                """
-                You are a helpful assistant. Respond to the user's message with your own answer.
-                Follow any task or output format the user requests.
-                """
+            instructions: instructions
         )
         var options = GenerationOptions()
         options.toolCallingMode = .disallowed
         do {
+            if request.sentenceCompletions {
+                options.maximumResponseTokens = responseTokens
+                let response = try await session.respond(
+                    to: request.prompt,
+                    generating: AppleSentenceCompletions.self,
+                    options: options,
+                    contextOptions: context
+                )
+                try Task.checkCancellation()
+                return String(
+                    decoding: try JSONEncoder().encode(response.content.completions),
+                    as: UTF8.self
+                )
+            }
             let response = try await session.respond(
                 to: request.prompt,
                 generating: AppleTextResponse.self,

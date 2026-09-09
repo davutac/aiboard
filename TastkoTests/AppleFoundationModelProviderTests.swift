@@ -47,6 +47,12 @@ struct AppleFoundationModelProviderTests {
                 capabilities: basic
             ).reasoningLevel == nil
         )
+        #expect(
+            try AppleFoundationModelProvider.contextOptions(
+                selection: selection,
+                capabilities: reasoning
+            ).reasoningLevel == .light
+        )
         for (id, level) in [
             ("light", ContextOptions.ReasoningLevel.light), ("moderate", .moderate),
             ("deep", .deep),

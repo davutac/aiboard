@@ -1,4 +1,5 @@
 import AppKit
+import Defaults
 import Observation
 import SwiftUI
 
@@ -7,6 +8,28 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let persistence = AppPersistence()
     @ObservationIgnored lazy var aiService = AIProviderService(persistence: persistence)
+    @ObservationIgnored lazy var sentenceService = SentenceCompletionService(
+        context: { TextPredictionService.shared.completionContext },
+        wordSuggestions: { TextPredictionService.shared.wordSuggestions(for: $0) },
+        selection: { [weak self] in
+            guard let service = self?.aiService, let provider = service.activeProvider else {
+                return nil
+            }
+            return service.selections[provider]
+        },
+        generate: { [weak self] prompt in
+            guard let self else { throw CancellationError() }
+            return try await self.aiService.generate(
+                AIGenerationRequest(
+                    prompt: prompt,
+                    timeout: 30,
+                    sentenceCompletions: true,
+                    systemInstructions: Defaults[.sentenceCompletionSystemPrompt]
+                )
+            ).text
+        },
+        insert: { TextPredictionService.shared.acceptCompletion($0, context: $1) }
+    )
     let updateService = AppUpdateService.shared
     let accessibilityService = AccessibilityService.shared
     let floatingWindowController = FloatingWindowController.shared
@@ -27,6 +50,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Application Lifecycle
     func applicationDidFinishLaunching(_ notification: Notification) {
         aiService.start()
+        floatingWindowController.sentenceService = sentenceService
+        sentenceService.start()
+        observeSentencePresentation()
         PhysicalKeyboardState.shared.start()
         startObservingActiveApplication()
         if let frontmostApplication = NSWorkspace.shared.frontmostApplication {
@@ -47,12 +73,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         pointerVisibilityMonitor.stop()
         DistributedNotificationCenter.default().removeObserver(self)
         floatingWindowController.stopLockScreenDisplay()
+        sentenceService.stop()
         TextPredictionService.shared.stop()
         NSWorkspace.shared.notificationCenter.removeObserver(self)
     }
 
+    // MARK: - Sentence Window Visibility
+    private func observeSentencePresentation() {
+        withObservationTracking {
+            _ = sentenceService.isGenerating
+            _ = sentenceService.suggestions
+            _ = sentenceService.error
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.floatingWindowController.updateSettings()
+                self.observeSentencePresentation()
+            }
+        }
+    }
+
     // MARK: - Provider Shutdown
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        sentenceService.stop()
         Task {
             await aiService.shutdown()
             sender.reply(toApplicationShouldTerminate: true)

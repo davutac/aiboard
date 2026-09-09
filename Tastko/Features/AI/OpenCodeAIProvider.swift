@@ -68,21 +68,50 @@ nonisolated struct OpenCodeAIProvider: AIProviderAdapter {
     }
 
     // MARK: - Prompt Body
-    static func promptBody(request: AIGenerationRequest, selection: AIProviderSelection) throws
+    static func promptBody(
+        request: AIGenerationRequest,
+        selection: AIProviderSelection,
+        structuredOutput: Bool = true
+    ) throws
         -> AIJSON
     {
         guard let id = selection.modelID, let slash = id.firstIndex(of: "/"), slash != id.startIndex
         else {
             throw AIProviderError.unavailableSelection
         }
+        let instructions =
+            request.sentenceCompletions
+            ? SentenceCompletionPrompt.resolvedInstructions(request.systemInstructions)
+            : "Respond to the user with your answer in the text field."
+        let schema = request.sentenceCompletions ? AITextOutput.sentenceSchema : AITextOutput.schema
+        let format: AIJSON
+        let system: String
+        if structuredOutput {
+            format = .object([
+                "type": .string("json_schema"),
+                "schema": try AIJSON.decode(Data(schema.utf8)),
+            ])
+            system =
+                instructions
+                + "\nReturn the result using StructuredOutput. Other tools are unavailable."
+        }
+        else {
+            format = .object(["type": .string("text")])
+            system =
+                instructions
+                + "\nReturn only a JSON object matching this schema, without commentary or tools:\n"
+                + schema
+        }
         var body: [String: AIJSON] = [
+            "system": .string(system),
+            "format": format,
             "model": .object([
                 "providerID": .string(String(id[..<slash])),
                 "modelID": .string(String(id[id.index(after: slash)...])),
             ]),
             "parts": .array([
                 .object([
-                    "type": .string("text"), "text": .string(AITextOutput.prompt(request.prompt)),
+                    "type": .string("text"), "text": .string(request.prompt),
                 ])
             ]),
         ]
@@ -108,7 +137,12 @@ nonisolated struct OpenCodeAIProvider: AIProviderAdapter {
                         .object([
                             "permission": .string("*"), "pattern": .string("*"),
                             "action": .string("deny"),
-                        ])
+                        ]),
+                        // OpenCode implements schema output as a tool; keep only that tool enabled.
+                        .object([
+                            "permission": .string("StructuredOutput"), "pattern": .string("*"),
+                            "action": .string("allow"),
+                        ]),
                     ]),
                 ])
             )
@@ -118,12 +152,27 @@ nonisolated struct OpenCodeAIProvider: AIProviderAdapter {
                 throw AIProviderError.invalidOutput
             }
             do {
-                let response = try await connection.request(
+                var response = try await connection.request(
                     "session/\(id)/message",
                     method: "POST",
                     body: Self.promptBody(request: request, selection: selection)
                 )
-                let text = try AITextOutput.openCode(response)
+                if Self.requiresAutomaticToolChoice(response) {
+                    try Task.checkCancellation()
+                    response = try await connection.request(
+                        "session/\(id)/message",
+                        method: "POST",
+                        body: Self.promptBody(
+                            request: request,
+                            selection: selection,
+                            structuredOutput: false
+                        )
+                    )
+                }
+                let text = try AITextOutput.openCode(
+                    response,
+                    sentenceCompletions: request.sentenceCompletions
+                )
                 await Self.cleanup(connection, id: id, abort: false)
                 return text
             }
@@ -132,6 +181,17 @@ nonisolated struct OpenCodeAIProvider: AIProviderAdapter {
                 throw error
             }
         }
+    }
+
+    // MARK: - Upstream Compatibility
+    static func requiresAutomaticToolChoice(_ response: AIJSON) -> Bool {
+        guard let message = response["info"]["error"]["data"]["message"].string else {
+            return false
+        }
+        let normalized = message.lowercased()
+        return normalized.contains("tool_choice")
+            && normalized.range(of: "only.{0,20}auto.{0,30}supported", options: .regularExpression)
+                != nil
     }
 
     // MARK: - Session Cleanup

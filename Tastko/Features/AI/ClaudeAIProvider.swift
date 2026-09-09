@@ -90,7 +90,7 @@ nonisolated struct ClaudeAIProvider: AIProviderAdapter {
             arguments: Self.arguments(selection: selection, model: model),
             environment: Self.environment(environment),
             directory: directory,
-            input: Data(AITextOutput.prompt(request.prompt).utf8),
+            input: Data(AITextOutput.prompt(request).utf8),
             timeout: request.timeout
         )
         return try AITextOutput.claude(result.checked())

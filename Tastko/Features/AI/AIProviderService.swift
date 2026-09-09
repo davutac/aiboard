@@ -24,20 +24,33 @@ final class AIProviderService {
     init(
         persistence: AppPersistence,
         resolver: AIExecutableResolver = AIExecutableResolver(),
-        adapters: [AIProviderID: any AIProviderAdapter]? = nil
+        adapters: [AIProviderID: any AIProviderAdapter]? = nil,
+        cliProvidersEnabled: Bool = false
     ) {
         self.persistence = persistence
         self.resolver = resolver
-        self.adapters =
-            adapters ?? [
+        if let adapters {
+            self.adapters = adapters
+        }
+        else if cliProvidersEnabled {
+            self.adapters = [
                 .codex: CodexAIProvider(), .claude: ClaudeAIProvider(),
                 .opencode: OpenCodeAIProvider(owner: AIOpenCodeServerOwner()),
                 .apple: AppleFoundationModelProvider(),
             ]
+        }
+        else {
+            self.adapters = [.apple: AppleFoundationModelProvider()]
+        }
         for provider in AIProviderID.allCases {
             selections[provider] = AIProviderSelection(provider: provider)
             statuses[provider] = AIProviderStatus()
         }
+    }
+
+    // MARK: - Available Providers
+    var availableProviders: [AIProviderID] {
+        AIProviderID.allCases.filter { adapters[$0] != nil }
     }
 
     // MARK: - Open Persistence
@@ -59,6 +72,12 @@ final class AIProviderService {
                 && configuration.modelID == nil
             {
                 configuration.modelID = AppleFoundationModelProvider.modelID
+            }
+            if let saved = settings.activeProvider.flatMap(AIProviderID.init(rawValue:)),
+                adapters[saved] == nil
+            {
+                settings.activeProvider =
+                    adapters[.apple] == nil ? nil : AIProviderID.apple.rawValue
             }
             try context.save()
             activeProvider = settings.activeProvider.flatMap(AIProviderID.init(rawValue:))
@@ -114,6 +133,7 @@ final class AIProviderService {
 
     // MARK: - Select Provider
     func selectProvider(_ provider: AIProviderID?) {
+        if let provider, adapters[provider] == nil { return }
         if save({ context in
             guard let settings = try context.fetch(FetchDescriptor<AISettings>()).first else {
                 throw AIProviderError.persistence("Settings missing.")
@@ -167,7 +187,7 @@ final class AIProviderService {
     // MARK: - Refresh All Providers
     func refreshProviders(onlyIfStale: Bool = false) async {
         await withTaskGroup(of: Void.self) { group in
-            for provider in AIProviderID.allCases {
+            for provider in availableProviders {
                 let status = statuses[provider] ?? AIProviderStatus()
                 if onlyIfStale, !status.isCached, let refreshed = status.refreshedAt,
                     Date().timeIntervalSince(refreshed) < 300

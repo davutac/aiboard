@@ -19,8 +19,12 @@
             let providerArgument = argument("--provider", in: arguments)
             let modelArgument = argument("--model", in: arguments)
             let promptArgument = argument("--prompt", in: arguments)
-            let providers = AIProviderID.allCases.filter { provider in
+            let providers = service.availableProviders.filter { provider in
                 providerArgument == nil || providerArgument == provider.rawValue
+            }
+            guard !providers.isEmpty else {
+                print("The requested AI provider is disabled in this build.")
+                return 1
             }
             var failed = false
             for provider in providers {
@@ -62,7 +66,8 @@
                 do {
                     let result = try await service.generate(
                         AIGenerationRequest(
-                            prompt: promptArgument ?? "Return exactly Tastko AI OK as text."
+                            prompt: promptArgument ?? "Return exactly Tastko AI OK as text.",
+                            sentenceCompletions: arguments.contains("--sentence-completions")
                         )
                     )
                     print(

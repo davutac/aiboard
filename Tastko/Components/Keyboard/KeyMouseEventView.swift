@@ -133,7 +133,7 @@ protocol KeyMouseEventNSViewDelegate: AnyObject {
 
 // MARK: - KeyMouseEventNSView
 @MainActor
-final class KeyMouseEventNSView: NSView {
+final class KeyMouseEventNSView: NSView, WindowMouseInteractiveRegion {
     weak var delegate: (any KeyMouseEventNSViewDelegate)?
     var hitRegion: KeyMouseHitRegion = .rectangle
 

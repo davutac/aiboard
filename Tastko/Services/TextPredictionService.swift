@@ -41,6 +41,8 @@ final class TextPredictionService {
         return service
     }()
 
+    @ObservationIgnored private var needsRefresh = true
+    private(set) var completionContext: PredictionContext?
     private(set) var suggestions: [String] = []
     private(set) var typedPrefix = ""
     private(set) var hasTextContext = false
@@ -55,7 +57,6 @@ final class TextPredictionService {
     @ObservationIgnored private let insert:
         (PredictionInsertion, FocusedKeyboardTarget) throws -> Void
     @ObservationIgnored private let debounce: Duration
-    @ObservationIgnored private var context: PredictionContext?
     @ObservationIgnored private var displayedContext: PredictionContext?
     @ObservationIgnored private var revision = 0
     @ObservationIgnored private var nativeWords: [String] = []
@@ -153,12 +154,16 @@ final class TextPredictionService {
             lastAvailability = availability
             return
         }
-        guard next != context || availability != lastAvailability else { return }
-        let sameSession = (context ?? displayedContext).map { next.hasSameSession(as: $0) } ?? false
+        guard needsRefresh || next != completionContext || availability != lastAvailability else {
+            return
+        }
+        let sameSession =
+            (completionContext ?? displayedContext).map { next.hasSameSession(as: $0) } ?? false
         invalidate(keepingPresentation: sameSession)
         typedPrefix = next.input.prefix
         lastAvailability = availability
-        context = next
+        completionContext = next
+        needsRefresh = false
         hasTextContext = true
         nativePending = true
         modelPending = availability == nil
@@ -252,7 +257,7 @@ final class TextPredictionService {
 
     // MARK: - Publication
     private func publish() {
-        guard !pressing, let context else { return }
+        guard !pressing, let context = completionContext else { return }
         let next = Array(
             context.input.validated(nativeWords + modelWords).prefix(
                 PredictionInput.maximumSuggestions
@@ -271,7 +276,8 @@ final class TextPredictionService {
         debounceTask = nil
         modelTask?.cancel()
         pendingModel = nil
-        context = nil
+        needsRefresh = true
+        if !keepingPresentation { completionContext = nil }
         nativeWords = []
         modelWords = []
         nativePending = false
@@ -323,6 +329,27 @@ final class TextPredictionService {
                 ),
                 next.target
             )
+            scheduleRefresh(delay: .milliseconds(20))
+            return true
+        }
+        catch { return false }
+    }
+
+    // MARK: - Sentence Completion Context
+    func wordSuggestions(for expected: PredictionContext) -> [String] {
+        guard completionContext == expected, displayedContext == expected else { return [] }
+        return suggestions
+    }
+
+    // MARK: - Sentence Completion Acceptance
+    @discardableResult
+    func acceptCompletion(_ suffix: String, context expected: PredictionContext) -> Bool {
+        guard isRunning, enabled(), !shortcutsActive(), !suffix.isEmpty,
+            contextProvider.capture(language: language()) == expected
+        else { return false }
+        invalidate()
+        do {
+            try insert(PredictionInsertion(text: suffix, deleteBackwardCount: 0), expected.target)
             scheduleRefresh(delay: .milliseconds(20))
             return true
         }

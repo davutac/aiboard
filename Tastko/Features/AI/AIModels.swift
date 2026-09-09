@@ -97,6 +97,8 @@ nonisolated struct AIProviderStatus: Sendable {
 nonisolated struct AIGenerationRequest: Sendable {
     let prompt: String
     var timeout: TimeInterval = 180
+    var sentenceCompletions = false
+    var systemInstructions: String? = nil
 }
 
 nonisolated struct AIGenerationResult: Sendable {

@@ -12,7 +12,10 @@ import Testing
         defer { try? FileManager.default.removeItem(at: directory) }
         let url = directory.appending(path: "Tastko.store")
         do {
-            let service = AIProviderService(persistence: AppPersistence(storeURL: url))
+            let service = AIProviderService(
+                persistence: AppPersistence(storeURL: url),
+                cliProvidersEnabled: true
+            )
             service.start()
             service.start()
             #expect(service.activeProvider == nil)
@@ -29,7 +32,10 @@ import Testing
                     == AIProviderID.allCases.count
             )
         }
-        let reopened = AIProviderService(persistence: AppPersistence(storeURL: url))
+        let reopened = AIProviderService(
+            persistence: AppPersistence(storeURL: url),
+            cliProvidersEnabled: true
+        )
         reopened.start()
         #expect(reopened.activeProvider == .claude)
         for provider in AIProviderID.allCases {
@@ -59,7 +65,10 @@ import Testing
             try context.save()
         }
         do {
-            let service = AIProviderService(persistence: AppPersistence(storeURL: url))
+            let service = AIProviderService(
+                persistence: AppPersistence(storeURL: url),
+                cliProvidersEnabled: true
+            )
             service.start()
             #expect(service.activeProvider == .codex)
             #expect(service.selections[.codex]?.modelID == "saved-codex")
@@ -68,13 +77,41 @@ import Testing
                 AIProviderSelection(provider: .apple, modelID: "system-default")
             )
         }
-        let reopened = AIProviderService(persistence: AppPersistence(storeURL: url))
+        let reopened = AIProviderService(
+            persistence: AppPersistence(storeURL: url),
+            cliProvidersEnabled: true
+        )
         reopened.start()
         #expect(reopened.activeProvider == .apple)
         #expect(reopened.selections[.apple]?.modelID == "system-default")
         #expect(reopened.selections[.codex]?.modelID == "saved-codex")
         let context = try #require(reopened.persistence.container?.mainContext)
         #expect(try context.fetchCount(FetchDescriptor<AIProviderConfiguration>()) == 4)
+    }
+
+    // MARK: - Disabled CLI Providers
+    @Test func migratesActiveCLIToAppleWhilePreservingConfiguration() async throws {
+        let persistence = AppPersistence(inMemory: true)
+        let legacy = AIProviderService(persistence: persistence, cliProvidersEnabled: true)
+        legacy.start()
+        legacy.selectProvider(.opencode)
+        legacy.updateSelection(AIProviderSelection(provider: .opencode, modelID: "saved-model"))
+        let service = AIProviderService(persistence: persistence)
+        service.start()
+        #expect(service.availableProviders == [.apple])
+        #expect(service.activeProvider == .apple)
+        #expect(service.selections[.opencode]?.modelID == "saved-model")
+        service.selectProvider(.codex)
+        #expect(service.activeProvider == .apple)
+        await service.refreshProvider(.opencode)
+        #expect(service.statuses[.opencode]?.executable == nil)
+        let restored = AIProviderService(persistence: persistence, cliProvidersEnabled: true)
+        restored.start()
+        #expect(restored.activeProvider == .apple)
+        #expect(restored.selections[.opencode]?.modelID == "saved-model")
+        service.selectProvider(nil)
+        service.start()
+        #expect(service.activeProvider == nil)
     }
 
     // MARK: - Previously Cleared Apple Selection

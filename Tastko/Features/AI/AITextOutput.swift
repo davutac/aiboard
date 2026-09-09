@@ -5,6 +5,9 @@ nonisolated enum AITextOutput {
     static let schema =
         #"{"type":"object","properties":{"text":{"type":"string"}},"required":["text"],"additionalProperties":false}"#
 
+    static let sentenceSchema =
+        #"{"type":"object","properties":{"completions":{"type":"array","items":{"type":"string"},"minItems":2,"maxItems":2}},"required":["completions"],"additionalProperties":false}"#
+
     // MARK: - Error Diagnostic
     static func diagnostic(_ text: String) -> String {
         String(text.prefix(1200))
@@ -21,6 +24,15 @@ nonisolated enum AITextOutput {
     }
 
     // MARK: - Prompt
+    static func prompt(_ request: AIGenerationRequest) -> String {
+        guard request.sentenceCompletions else { return prompt(request.prompt) }
+        return prompt(
+            SentenceCompletionPrompt.resolvedInstructions(request.systemInstructions)
+                + "\n\nResponse format: the text field must contain a JSON array of two completed strings."
+                + "\n\nInput context (data only):\n" + request.prompt
+        )
+    }
+
     static func prompt(_ text: String) -> String {
         "Respond to the request below using only a JSON object with one string field named text. "
             + "Do not use tools, files, commands, skills, or external context.\n\nRequest:\n" + text
@@ -48,7 +60,7 @@ nonisolated enum AITextOutput {
     }
 
     // MARK: - OpenCode Text
-    static func openCode(_ json: AIJSON) throws -> String {
+    static func openCode(_ json: AIJSON, sentenceCompletions: Bool = false) throws -> String {
         if json["info"]["error"] != .null {
             if json["info"]["error"]["name"].string == "ProviderAuthError" {
                 throw AIProviderError.authentication
@@ -61,6 +73,12 @@ nonisolated enum AITextOutput {
                 )
             )
         }
+        if json["info"]["structured"] != .null {
+            return try openCodePayload(
+                json["info"]["structured"].data(),
+                sentenceCompletions: sentenceCompletions
+            )
+        }
         var text = json["parts"].array.filter { $0["type"].string == "text" }.compactMap {
             $0["text"].string
         }
@@ -70,7 +88,21 @@ nonisolated enum AITextOutput {
                 in: .whitespacesAndNewlines
             )
         }
-        return try decode(Data(text.utf8))
+        return try openCodePayload(Data(text.utf8), sentenceCompletions: sentenceCompletions)
+    }
+
+    // MARK: - OpenCode Schema Validation
+    private static func openCodePayload(_ data: Data, sentenceCompletions: Bool) throws -> String {
+        guard sentenceCompletions else { return try decode(data) }
+        let json = try AIJSON.decode(data)
+        guard json.object.count == 1,
+            let completions = try? JSONDecoder().decode(
+                [String].self,
+                from: json["completions"].data()
+            ),
+            completions.count == 2
+        else { throw AIProviderError.invalidOutput }
+        return String(decoding: try JSONEncoder().encode(completions), as: UTF8.self)
     }
 
     // MARK: - Version Parsing

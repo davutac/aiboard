@@ -23,15 +23,16 @@ struct AIProviderSettingsView: View {
                         )
                     ) {
                         Text("Off").tag(nil as AIProviderID?)
-                        ForEach(AIProviderID.allCases) { provider in
+                        ForEach(service.availableProviders) { provider in
                             Text(provider.name).tag(Optional(provider))
                         }
                     }
                     .accessibilityIdentifier("ai.active-provider")
                 }
-                ForEach(AIProviderID.allCases) { provider in
+                ForEach(service.availableProviders) { provider in
                     AIProviderSettingsRow(service: service, provider: provider)
                 }
+                SentencePromptSettingsView()
             }
             .disabled(service.persistence.container == nil)
         }
@@ -39,7 +40,7 @@ struct AIProviderSettingsView: View {
         .pickerStyle(.menu)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Refresh All", systemImage: "arrow.clockwise") {
+                Button("Refresh", systemImage: "arrow.clockwise") {
                     Task { await service.refreshProviders() }
                 }
                 .disabled(service.persistence.container == nil)
