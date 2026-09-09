@@ -18,7 +18,7 @@ extension SentenceBenchmark {
         )!
         _ = try await provider.generate(
             request: AIGenerationRequest(
-                prompt: SentenceCompletionPrompt.input(warmInput),
+                prompt: warmInput.context,
                 sentenceCompletions: true,
                 systemInstructions: instructions
             ),
@@ -35,7 +35,7 @@ extension SentenceBenchmark {
                     language: language
                 )!
                 let request = AIGenerationRequest(
-                    prompt: SentenceCompletionPrompt.input(input),
+                    prompt: input.context,
                     sentenceCompletions: true,
                     systemInstructions: instructions
                 )

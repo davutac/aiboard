@@ -26,23 +26,17 @@ struct SentenceCompletionTests {
         #expect(request.systemInstructions == custom)
     }
 
-    // MARK: - Word Hints
-    @Test func wordHintsAreCappedAndDoNotRestartGeneration() async throws {
+    // MARK: - Plain Text Input
+    @Test func sendsOnlyTheExactWritingWithoutMetadata() async {
         let fixture = SentenceFixture()
-        fixture.words = ["want", "was", "will", "wish", "wonder", "work"]
+        let text = "We reviewed the plan.\nI'm looking for a \""
+        fixture.current = predictionContext(text)
         fixture.service.start()
         defer { fixture.service.stop() }
         await eventually { fixture.requests.count == 1 }
-        let payload = try #require(
-            JSONSerialization.jsonObject(with: Data(fixture.prompts[0].utf8)) as? [String: Any]
-        )
-        #expect(payload["wordSuggestions"] as? [String] == Array(fixture.words.prefix(5)))
-        #expect(payload["textBeforeCursor"] as? String == "I want")
-        fixture.words = ["changed"]
-        await Task.yield()
-        #expect(fixture.requests.count == 1)
-        fixture.finish(0, #"["I want to rest."]"#)
-        await eventually { !fixture.service.suggestions.isEmpty }
+        #expect(fixture.prompts == [text])
+        fixture.finish(0, #"["We reviewed the plan.\nI'm looking for a \"better approach\"."]"#)
+        await eventually { fixture.service.suggestions == ["better approach\"."] }
     }
 
     // MARK: - Output Validation
@@ -101,7 +95,7 @@ struct SentenceCompletionTests {
         fixture.service.stop()
     }
 
-    @Test func refreshUsesLatestTextAfterThrottleInterval() async throws {
+    @Test func refreshUsesLatestTextAfterThrottleInterval() async {
         let fixture = SentenceFixture()
         fixture.interval = .milliseconds(150)
         fixture.service.start()
@@ -112,16 +106,13 @@ struct SentenceCompletionTests {
         fixture.current = predictionContext("I want t")
         fixture.current = predictionContext("I want to")
         await eventually { fixture.requests.count == 2 }
-        let payload = try #require(
-            JSONSerialization.jsonObject(with: Data(fixture.prompts[1].utf8)) as? [String: Any]
-        )
-        #expect(payload["textBeforeCursor"] as? String == "I want to")
+        #expect(fixture.prompts[1] == "I want to")
         fixture.finish(1, #"["I want to rest."]"#)
         await eventually { !fixture.service.isGenerating }
         #expect(fixture.requests.count == 2)
     }
 
-    @Test func typingReusesMatchingResultsDuringConcurrentRefresh() async throws {
+    @Test func typingReusesMatchingResultsDuringConcurrentRefresh() async {
         let fixture = SentenceFixture()
         fixture.service.start()
         defer { fixture.service.stop() }
@@ -132,10 +123,7 @@ struct SentenceCompletionTests {
         await eventually { fixture.requests.count == 2 }
         await eventually { fixture.service.suggestions == [" rest."] }
         #expect(fixture.service.isGenerating)
-        let payload = try #require(
-            JSONSerialization.jsonObject(with: Data(fixture.prompts[1].utf8)) as? [String: Any]
-        )
-        #expect(payload["textBeforeCursor"] as? String == "I want to")
+        #expect(fixture.prompts[1] == "I want to")
         fixture.current = predictionContext("I want to r")
         await eventually { fixture.service.suggestions == ["est."] }
         fixture.finish(1, #"["I want to rest."]"#)
@@ -191,8 +179,58 @@ struct SentenceCompletionTests {
         #expect(fixture.service.suggestions == ["sleep."])
     }
 
+    @Test func finishedResultPublishesBeforeLaterRequestAndRejectsOlderCompletion() async {
+        let fixture = SentenceFixture()
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.current = predictionContext("I want to")
+        await eventually { fixture.requests.count == 2 }
+        fixture.current = predictionContext("I want to ")
+        await eventually { fixture.requests.count == 3 }
+
+        fixture.finish(1, #"["I want to walk."]"#)
+        await eventually { fixture.service.suggestions == ["walk."] }
+        #expect(fixture.service.isGenerating)
+
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { fixture.cancelled == [0] }
+        #expect(fixture.service.suggestions == ["walk."])
+
+        fixture.finish(2, #"["I want to sleep."]"#)
+        await eventually { fixture.service.suggestions == ["sleep."] }
+        await eventually { !fixture.service.isGenerating }
+    }
+
+    @Test func overlappingRequestsCoalesceLatestInputWhenBothSlotsAreBusy() async throws {
+        let fixture = SentenceFixture()
+        fixture.maximumConcurrentRequests = 2
+        fixture.interval = .milliseconds(25)
+        fixture.service.start()
+        defer { fixture.service.stop() }
+        await eventually { fixture.requests.count == 1 }
+        fixture.current = predictionContext("I want to")
+        await eventually { fixture.requests.count == 2 }
+        fixture.current = predictionContext("I want to send")
+        await Task.yield()
+        fixture.current = predictionContext("I want to send the report")
+        try await Task.sleep(for: .milliseconds(35))
+        #expect(fixture.requests.count == 2)
+
+        fixture.finish(0, #"["I want to rest."]"#)
+        await eventually { fixture.requests.count == 3 }
+        #expect(fixture.prompts[2] == "I want to send the report")
+
+        fixture.finish(1, #"["I want to send the report today."]"#)
+        await eventually { fixture.service.suggestions == [" today."] }
+        #expect(fixture.service.isGenerating)
+        fixture.finish(2, #"["I want to send the report tomorrow."]"#)
+        await eventually { fixture.service.suggestions == [" tomorrow."] }
+        await eventually { !fixture.service.isGenerating }
+    }
+
     // MARK: - Serial Request Scheduling
-    @Test func serialGenerationCoalescesTypingAndStartsTheNewestContext() async throws {
+    @Test func serialGenerationCoalescesTypingAndStartsTheNewestContext() async {
         let fixture = SentenceFixture()
         fixture.maximumConcurrentRequests = 1
         fixture.service.start()
@@ -205,10 +243,7 @@ struct SentenceCompletionTests {
         #expect(fixture.requests.count == 1)
         fixture.finish(0, #"["I want to take a break."]"#)
         await eventually { fixture.requests.count == 2 }
-        let payload = try #require(
-            JSONSerialization.jsonObject(with: Data(fixture.prompts[1].utf8)) as? [String: Any]
-        )
-        #expect(payload["textBeforeCursor"] as? String == "I want to send the report")
+        #expect(fixture.prompts[1] == "I want to send the report")
         #expect(fixture.service.suggestions.isEmpty)
         fixture.finish(1, #"["I want to send the report today."]"#)
         await eventually { fixture.service.suggestions == [" today."] }
@@ -366,7 +401,6 @@ private final class SentenceFixture {
     var selected: AIProviderSelection? = AIProviderSelection(provider: .apple)
     var requests: [CheckedContinuation<String, Error>?] = []
     var insertions: [String] = []
-    var words: [String] = []
     var prompts: [String] = []
     var cancelled: [Int] = []
     var interval: Duration = .zero
@@ -375,7 +409,6 @@ private final class SentenceFixture {
         minimumInterval: interval,
         maximumConcurrentRequests: maximumConcurrentRequests,
         context: { [unowned self] in current },
-        wordSuggestions: { [unowned self] _ in words },
         selection: { [unowned self] in selected },
         generate: { [unowned self] prompt in
             prompts.append(prompt)

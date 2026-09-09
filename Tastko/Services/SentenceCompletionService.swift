@@ -17,7 +17,6 @@ final class SentenceCompletionService {
     @ObservationIgnored private var lastContext: PredictionContext?
     @ObservationIgnored private var lastSelection: AIProviderSelection?
     @ObservationIgnored private let context: () -> PredictionContext?
-    @ObservationIgnored private let wordSuggestions: (PredictionContext) -> [String]
     @ObservationIgnored private let selection: () -> AIProviderSelection?
     @ObservationIgnored private let generate: (String) async throws -> String
     @ObservationIgnored private let insert: (String, PredictionContext) -> Bool
@@ -35,10 +34,9 @@ final class SentenceCompletionService {
 
     // MARK: - Initialization
     init(
-        minimumInterval: Duration = .zero,
-        maximumConcurrentRequests: Int = 1,
+        minimumInterval: Duration = .milliseconds(250),
+        maximumConcurrentRequests: Int = 2,
         context: @escaping () -> PredictionContext?,
-        wordSuggestions: @escaping (PredictionContext) -> [String] = { _ in [] },
         selection: @escaping () -> AIProviderSelection?,
         generate: @escaping (String) async throws -> String,
         insert: @escaping (String, PredictionContext) -> Bool
@@ -47,7 +45,6 @@ final class SentenceCompletionService {
         self.maximumConcurrentRequests = maximumConcurrentRequests
         self.minimumInterval = minimumInterval
         self.context = context
-        self.wordSuggestions = wordSuggestions
         self.selection = selection
         self.generate = generate
         self.insert = insert
@@ -181,12 +178,7 @@ final class SentenceCompletionService {
             }
             do {
                 try Task.checkCancellation()
-                let output = try await self.generate(
-                    SentenceCompletionPrompt.input(
-                        current.input,
-                        wordSuggestions: self.wordSuggestions(current)
-                    )
-                )
+                let output = try await self.generate(current.input.context)
                 try Task.checkCancellation()
                 guard self.revision == token, id > self.newestPublishedID,
                     let latest = self.context(), self.selection() == selected,

@@ -10,7 +10,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @ObservationIgnored lazy var aiService = AIProviderService(persistence: persistence)
     @ObservationIgnored lazy var sentenceService = SentenceCompletionService(
         context: { TextPredictionService.shared.completionContext },
-        wordSuggestions: { TextPredictionService.shared.wordSuggestions(for: $0) },
         selection: { [weak self] in
             guard let service = self?.aiService, let provider = service.activeProvider else {
                 return nil

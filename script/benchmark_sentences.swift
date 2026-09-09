@@ -43,7 +43,7 @@ import FoundationModels
             let start = ContinuousClock.now
             let output = try await provider.generate(
                 request: AIGenerationRequest(
-                    prompt: SentenceCompletionPrompt.input(input),
+                    prompt: input.context,
                     sentenceCompletions: true,
                     systemInstructions: instructions
                 ),

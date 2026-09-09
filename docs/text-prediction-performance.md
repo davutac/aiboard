@@ -67,7 +67,7 @@ Calling it immediately before generation would not provide that window. This
 single-suggestion change preserved scheduling, cancellation, and model options.
 
 The subsequent [latency investigation](sentence-latency-experiments.md) retained
-three changes, measured separately:
+three changes for v0.1.7, measured separately:
 
 | Change | Measurement | Before → after |
 | --- | --- | --- |
@@ -82,3 +82,13 @@ rewrites did not preserve quality reliably.
 Run `bash script/benchmark_sentence_typing.sh --rounds 1` for a typing replay
 smoke test. It includes the real sentence scheduler and model, but excludes
 Accessibility capture, word prediction, and UI rendering.
+
+The current interaction allows two overlapping sentence requests with a 250 ms
+start throttle, publishing newer usable results immediately. The serial timing
+above describes v0.1.7 and does not measure this subsequent policy.
+
+The subsequent text-only prompt removes keyboard-language and native-word hints.
+It measures 126 instruction tokens instead of 245. Thirty provider requests per
+version measured 799.0 → 750.4 ms median (6.1%); this is separate from UI latency
+and the older scheduling comparison. See the experiment report for sampling limits
+and remaining grammar, partial-output, and completed-sentence behavior.

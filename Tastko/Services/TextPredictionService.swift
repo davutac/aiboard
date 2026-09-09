@@ -335,12 +335,6 @@ final class TextPredictionService {
         catch { return false }
     }
 
-    // MARK: - Sentence Completion Context
-    func wordSuggestions(for expected: PredictionContext) -> [String] {
-        guard completionContext == expected, displayedContext == expected else { return [] }
-        return suggestions
-    }
-
     // MARK: - Sentence Completion Acceptance
     @discardableResult
     func acceptCompletion(_ suffix: String, context expected: PredictionContext) -> Bool {

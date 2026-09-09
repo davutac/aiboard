@@ -13,7 +13,7 @@ nonisolated private struct AppleTextResponse {
 nonisolated private struct AppleSentenceCompletion {
     @Guide(
         description:
-            "The entire textBeforeCursor copied verbatim, followed by one short sentence ending."
+            "The original text copied exactly, followed by one short, natural sentence ending."
     )
     var completedText: String
 }
@@ -117,6 +117,10 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             request.sentenceCompletions
             ? SentenceCompletionPrompt.resolvedInstructions(request.systemInstructions)
             : "You are a helpful assistant. Respond to the user and follow their requested output format."
+        let prompt =
+            request.sentenceCompletions
+            ? String(decoding: try JSONEncoder().encode(["text": request.prompt]), as: UTF8.self)
+            : request.prompt
         var responseTokens: Int?
         if request.sentenceCompletions {
             let counts = try await tokenCache.counts(instructions: instructions) { [systemModel] in
@@ -130,7 +134,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             }
             let budget = AppleCompletionBudget(
                 instructionTokens: counts.instructions,
-                promptTokens: try await systemModel.tokenCount(for: Prompt(request.prompt)),
+                promptTokens: try await systemModel.tokenCount(for: Prompt(prompt)),
                 schemaTokens: counts.schema,
                 contextSize: systemModel.contextSize
             )
@@ -149,7 +153,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
             if request.sentenceCompletions {
                 options.maximumResponseTokens = responseTokens
                 let response = try await session.respond(
-                    to: request.prompt,
+                    to: prompt,
                     generating: AppleSentenceCompletion.self,
                     options: options,
                     contextOptions: context
@@ -161,7 +165,7 @@ nonisolated struct AppleFoundationModelProvider: AIProviderAdapter {
                 )
             }
             let response = try await session.respond(
-                to: request.prompt,
+                to: prompt,
                 generating: AppleTextResponse.self,
                 options: options,
                 contextOptions: context

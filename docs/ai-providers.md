@@ -28,18 +28,18 @@ of the input plus its ending, and 256 tokens of headroom. Oversized requests
 fail with a clear error; custom instructions are never silently truncated.
 Settings displays the instruction token count and limit.
 
-`SentenceCompletionPrompt.swift` owns the shared completion instructions. Typed
-text is a separate JSON context payload, not part of the standing instructions.
-It includes up to five currently available word suggestions for the same context,
-sampled when generation starts. These are optional hints; generation never waits
-for word predictions, and later word updates do not trigger another request.
+`SentenceCompletionPrompt.swift` owns the shared completion instructions. The
+request contains only the existing writing in a single `text` field. No cursor
+metadata,
+keyboard language, or word suggestions are sent; the model infers the language,
+tone, and meaning from the writing and finishes the sentence naturally.
 Apple receives the instructions through `LanguageModelSession` and returns a
 native `@Generable` object with one `completedText` string. Only one sentence
-suggestion is generated and displayed. The default system prompt was trimmed
-from 284 to 245 measured tokens; custom instructions remain verbatim. See
-[sentence latency experiments](sentence-latency-experiments.md) for timings and
-quality limits. The prompt asks for a concise, likely ending in the language of
-the writing, with the exact typed prefix preserved.
+suggestion is generated and displayed. The original text must be copied exactly
+so the app can insert only the added ending. The default instructions measure 126
+tokens, down from 245. Custom instructions remain verbatim.
+See [sentence latency experiments](sentence-latency-experiments.md) for timings
+and quality limits.
 Model quality still varies: prefix/format checks reject malformed output, but do
 not guarantee grammar or semantic quality.
 
@@ -49,12 +49,14 @@ Motion is enabled. Suggestion buttons size to their current text. Requests have 
 with full details on hover. Failures are not retried and
 providers are never switched automatically.
 
-Sentence generation runs one request at a time. Continued typing updates the queued
-context; when the active request finishes, the service immediately starts the
-latest input without an additional throttle. Intermediate snapshots are coalesced.
-A result that still matches the current text is shown immediately and trimmed as
-typing continues. Stale results cannot replace a newer usable completion. Failed
-or empty results preserve any still-valid visible suggestion.
+Sentence generation allows two requests in flight, with at least 250 ms between
+request starts. Continued typing updates the queued context; each new request uses
+the latest input, coalescing intermediate snapshots when both slots are occupied.
+A usable result appears as soon as it finishes if its request is newer than the
+last result shown and still matches the current text. It does not wait for a later
+request to finish. Older requests are cancelled once a newer usable result appears,
+and late older results cannot overwrite it. Only one suggestion is displayed.
+Failed or empty results preserve any still-valid visible suggestion.
 The last successful completion is cached in memory with its input, language, and
 model selection. Returning to that input after a focus change or keyboard restart
 restores the suggestions without a request. Changing the system prompt clears the
@@ -114,6 +116,6 @@ LLVM_PROFILE_FILE=/tmp/tastko-ai-%p.profraw \
 
 Add `--generate` to send a request through Apple. Optionally use `--provider apple`
 and `--model system-default`. Use `--prompt "hi how are you"` to test custom input,
-or `--sentence-completions` with a JSON context payload to test sentence endings.
+or `--sentence-completions --prompt "I would like to"` to test sentence endings.
 The harness uses an in-memory store, leaves saved selections unchanged, and reports
 the result and timing. It is excluded from Release.

@@ -2,8 +2,10 @@
 
 The baseline is commit `6df7518`, which already generates one sentence suggestion.
 Experiments used Apple's on-device model on this Mac with Xcode 27 beta 6.
-Three changes were retained: cached instruction/schema token counts, a shorter
-default prompt, and one active sentence request at a time. The sections below
+The latency work retained cached instruction/schema token counts, a shorter
+default prompt, and initially one active sentence request at a time. A subsequent
+interaction change allows two overlapping requests with a 250 ms throttle so newer
+typing can start generating before an earlier request finishes. The sections below
 report each comparison separately; provider generation and post-typing wait are
 different measurements.
 
@@ -173,7 +175,7 @@ not enough to select a prompt.
 
 The next change targets time spent waiting after typing, rather than isolated
 model generation. The old default started requests at 500 ms intervals and allowed
-five in flight. The new default allows **one active sentence request** and starts
+five in flight. The v0.1.7 default allowed **one active sentence request** and starts
 the latest queued input as soon as that request finishes, with no fixed throttle.
 Intermediate input snapshots are coalesced. Matching earlier results still appear
 immediately and remain usable while a refresh runs. Cancellation, focus checks,
@@ -229,6 +231,23 @@ check showed one companion suggestion, `…for the meeting tomorrow?`, for
 `Could you please confirm the date` in the rebuilt Debug app. This verified live
 display, not a new timed UI benchmark or click-to-insert test.
 
+## Subsequent interaction change
+
+After v0.1.7, the requested interaction changed to allow overlapping generations
+with a slight throttle. The default is now two requests in flight, with 250 ms
+between starts. The single visible suggestion updates as each valid response
+finishes, provided its request is newer than the last published request. A still
+newer request may remain in flight. Older results cannot replace newer ones.
+
+The serial-scheduling numbers above are historical measurements, not performance
+claims for this new policy. `benchmark_sentence_typing.sh` retains explicit old
+and serial parameters so those comparisons remain reproducible. The new behavior
+is covered by request-ordering, bounded-overlap, coalescing, and throttle tests.
+All 439 unit tests passed. A four-case real-model typing smoke test using the new
+defaults observed two active requests and a usable suggestion in every case; the
+Debug build and launch also passed. These checks do not establish a latency
+improvement over serial generation.
+
 ## Apple references
 
 - [Performance analysis and token consumption](https://developer.apple.com/documentation/foundationmodels/analyzing-the-runtime-performance-of-your-foundation-models-app)
@@ -239,3 +258,44 @@ Apple explains that output length affects generation time and that schema
 omission can reduce input processing when examples already define the format.
 Those opportunities still need application-specific quality checks. Session
 prewarming requires lead time; it does not make inference itself instantaneous.
+
+## Text-only autocomplete prompt
+
+The next simplification removes keyboard-language and native-word hints entirely.
+The service sends the captured writing unchanged; the Apple provider puts it in a
+single `text` field to distinguish writing from instructions and preserve quoted
+text. No cursor metadata is sent. The default instructions ask for natural sentence
+completion in the language of that text, with an explicit partial-word example.
+The production prompt measures 126 tokens, down from 245 (49% fewer).
+
+Three ten-sample runs per version on this Mac measured a median of 799.0 ms for
+the previous provider/prompt and 750.4 ms for the new version, a 6.1% reduction.
+Both passed prefix/format checks on 30/30 outputs. These are provider timings,
+including token counting, not end-to-end typing/UI latency. Baseline runs were
+collected during the candidate comparisons; the final three runs followed them,
+so system load and sampling remain possible confounders. Do not add this percentage
+to earlier experiments or treat it as a guaranteed speedup.
+
+Screening unmarked raw text produced follow-up questions and only 4/10 usable
+standard outputs. A simple label improved ordinary inputs but mishandled quotes
+and command-like writing. A single text field preserved those boundaries without
+restoring metadata. Short 153-token instructions repeatedly left `I wan` unfinished;
+the retained autocomplete wording completed it as `I want` in all three final runs.
+A longer 206-token variant did not resolve the remaining language-quality issues.
+
+A 16-case quality screen of the retained wording (with a trailing newline in the
+instructions file, measuring 127 tokens) passed prefix/format checks on 14/16:
+the model corrected `realy` and removed an existing newline, so both are rejected
+by the service. It still sometimes adds another sentence, adds to already-complete
+text, or makes German grammar errors. The repeated standard runs also contained
+some extra sentences and German article errors. This change simplifies input and
+reduces measured latency; it does not solve these model-quality limitations.
+
+The local `.build/verification/sentence-latency/text-only/` archive contains
+candidate instructions, outputs, and the repeated comparisons. The service tests
+verify exact writing reaches the provider, including quotes and newlines, alongside
+result ordering and throttle behavior. The full suite passed 439 test runs after
+the provider changes; focused sentence tests passed again with the final prompt,
+and the rebuilt Debug app launched. Four synthetic typing cases using the real
+Apple model all returned suggestions with peak concurrency two. These were model
+integration checks, not live Accessibility insertion tests.
