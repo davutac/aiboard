@@ -25,7 +25,9 @@ struct AlwaysOnTopWindowConfiguration {
         minSize: CGSize = FloatingWindowDefaults.defaultMinimumSize,
         maxSize: CGSize = FloatingWindowDefaults.defaultMaximumSize,
         origin: CGPoint? = nil,
-        level: NSWindow.Level = .floating,
+        level: NSWindow.Level = NSWindow.Level(
+            rawValue: Int(CGWindowLevelForKey(.maximumWindow))
+        ),
         collectionBehavior: NSWindow.CollectionBehavior = [
             .canJoinAllSpaces,
             .stationary,

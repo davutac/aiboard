@@ -40,8 +40,15 @@ struct AIProviderSettingsRow: View {
             else {
                 modelPicker
             }
-            if model?.option != nil || selection.optionID != nil {
-                optionPicker
+            optionPicker
+            if model?.option == nil {
+                Text(
+                    model == nil
+                        ? "Reasoning options will appear when the system model is available."
+                        : "This system model does not support adjustable reasoning."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             if let error = status.error {
                 Text(error).foregroundStyle(.red).textSelection(.enabled)
@@ -101,8 +108,9 @@ struct AIProviderSettingsRow: View {
 
     // MARK: - Reasoning Picker
     private var optionPicker: some View {
-        Picker(model?.option?.name ?? "Option", selection: selectionBinding(\.optionID)) {
-            Text("Default").tag(nil as String?)
+        Picker("Reasoning", selection: selectionBinding(\.optionID)) {
+            Text(model?.option == nil ? "Unavailable" : "Default (Light)")
+                .tag(nil as String?)
             if let saved = selection.optionID,
                 !(model?.option?.choices.contains { $0.id == saved } ?? false)
             {
@@ -113,7 +121,7 @@ struct AIProviderSettingsRow: View {
             }
         }
         .disabled(model?.option == nil && selection.optionID == nil)
-        .accessibilityLabel("\(provider.name) \(model?.option?.name ?? "option")")
+        .accessibilityLabel("\(provider.name) reasoning")
         .accessibilityIdentifier("ai.\(provider.rawValue).option")
     }
 

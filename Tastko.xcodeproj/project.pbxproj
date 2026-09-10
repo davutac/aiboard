@@ -29,11 +29,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		6C9A20012FA0000000000001 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
-		6C9A20022FA0000000000001 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		6C80F6DE2FA77EDA004F5BFA /* Tastko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tastko.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C80F6DE2FA77EDA004F5BFA /* Tastko Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tastko Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C80F6ED2FA77EDB004F5BFA /* TastkoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TastkoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C80F6F72FA77EDB004F5BFA /* TastkoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TastkoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C9A20012FA0000000000001 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		6C9A20022FA0000000000001 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -81,15 +81,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		6C9A20032FA0000000000001 /* Configuration */ = {
-			isa = PBXGroup;
-			children = (
-				6C9A20012FA0000000000001 /* Debug.xcconfig */,
-				6C9A20022FA0000000000001 /* Release.xcconfig */,
-			);
-			path = Configuration;
-			sourceTree = "<group>";
-		};
 		6C80F6D52FA77EDA004F5BFA = {
 			isa = PBXGroup;
 			children = (
@@ -104,11 +95,20 @@
 		6C80F6DF2FA77EDA004F5BFA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				6C80F6DE2FA77EDA004F5BFA /* Tastko.app */,
+				6C80F6DE2FA77EDA004F5BFA /* Tastko Debug.app */,
 				6C80F6ED2FA77EDB004F5BFA /* TastkoTests.xctest */,
 				6C80F6F72FA77EDB004F5BFA /* TastkoUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		6C9A20032FA0000000000001 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				6C9A20012FA0000000000001 /* Debug.xcconfig */,
+				6C9A20022FA0000000000001 /* Release.xcconfig */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -135,7 +135,7 @@
 				6C9A10032FA0000000000001 /* Sparkle */,
 			);
 			productName = Tastko;
-			productReference = 6C80F6DE2FA77EDA004F5BFA /* Tastko.app */;
+			productReference = 6C80F6DE2FA77EDA004F5BFA /* Tastko Debug.app */;
 			productType = "com.apple.product-type.application";
 		};
 		6C80F6EC2FA77EDB004F5BFA /* TastkoTests */ = {
